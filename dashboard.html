@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Produtividade Band</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/mqttws31.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    h1 { text-align: center; }
+    .container { display: flex; justify-content: space-around; flex-wrap: wrap; margin-top: 30px; }
+    .chart-container { width: 400px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-bottom: 20px; }
+    .alerta { color: red; font-weight: bold; text-align: center; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>Dashboard Produtividade Band</h1>
+
+<div class="container">
+  <div class="chart-container">
+    <canvas id="graficoProdutividade"></canvas>
+    <div id="alertaProdutividade" class="alerta"></div>
+  </div>
+</div>
+
+<script>
+  // ================= CONFIGURAÇÕES =================
+  const broker = "test.mosquitto.org";
+  const port = 8081; // MQTT over WebSockets
+  const clientId = "dashboard_" + Math.floor(Math.random()*1000);
+  const topicStatus = "produtividade/band1/status";
+  const topicAlertas = "produtividade/band1/alertas";
+
+  // Meta diária e limite de Overworking (em minutos)
+  const metaWorkON = 480; // 8h
+  const limiteOverworking = 60; // 1h contínuo
+
+  // ================= MQTT =================
+  const client = new Paho.MQTT.Client(broker, port, clientId);
+
+  client.onConnectionLost = function(responseObject) {
+    console.log("Conexão perdida:", responseObject.errorMessage);
+    setTimeout(connectMQTT, 2000);
+  };
+
+  client.onMessageArrived = function(message) {
+    if(message.destinationName === topicStatus) {
+      const dados = JSON.parse(message.payloadString);
+      atualizarGrafico(dados);
+    } else if(message.destinationName === topicAlertas) {
+      document.getElementById("alertaProdutividade").innerText = message.payloadString;
+    }
+  };
+
+  function connectMQTT() {
+    client.connect({
+      onSuccess: function() {
+        console.log("Conectado ao broker MQTT");
+        client.subscribe(topicStatus);
+        client.subscribe(topicAlertas);
+      },
+      useSSL: true
+    });
+  }
+
+  connectMQTT();
+
+  // ================= Chart.js =================
+  const ctx = document.getElementById('graficoProdutividade').getContext('2d');
+  const grafico = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['WorkON', 'Working', 'Overworking', 'WorkOFF'],
+      datasets: [{
+        data: [0, 0, 0, 0],
+        backgroundColor: ['#3498db','#2ecc71','#e74c3c','#95a5a6']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        title: { display: true, text: 'Produtividade da Band (minutos)' }
+      }
+    }
+  });
+
+  // ================= Controle de tempo acumulado =================
+  let tempoAcumulado = { WorkON: 0, Working: 0, Overworking: 0, WorkOFF: 0 };
+  let modoAtual = 'WorkOFF';
+  let inicioModo = Date.now();
+
+  function atualizarGrafico(dados) {
+    // Atualiza tempo acumulado do modo anterior
+    const agora = Date.now();
+    const deltaMinutos = (agora - inicioModo) / 60000;
+    tempoAcumulado[modoAtual] += deltaMinutos;
+
+    // Atualiza o modo atual
+    modoAtual = dados.modo;
+    inicioModo = agora;
+
+    // Atualiza o gráfico
+    grafico.data.datasets[0].data = [
+      Math.round(tempoAcumulado.WorkON),
+      Math.round(tempoAcumulado.Working),
+      Math.round(tempoAcumulado.Overworking),
+      Math.round(tempoAcumulado.WorkOFF)
+    ];
+    grafico.update();
+
+    // ================= Alertas =================
+    let alerta = "";
+    if(tempoAcumulado.WorkON < metaWorkON) {
+      alerta = `⚠️ Meta diária de horas não atingida (${Math.round(tempoAcumulado.WorkON)} / ${metaWorkON} min)`;
+    }
+    if(tempoAcumulado.Working > limiteOverworking) {
+      alerta = `⚠️ Possível Overworking: ${Math.round(tempoAcumulado.Working)} min contínuos`;
+    }
+
+    document.getElementById("alertaProdutividade").innerText = alerta;
+  }
+
+</script>
+
+</body>
+</html>
