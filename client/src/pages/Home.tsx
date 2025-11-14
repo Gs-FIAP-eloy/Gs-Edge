@@ -5,10 +5,26 @@ import { Card } from "@/components/ui/card";
 import { AlertCircle, Wifi, WifiOff, Activity, Zap, Radio, ChevronDown } from "lucide-react";
 import { Toaster, toast } from "sonner";
 
-interface MQTTData {
-  heart_rate: number;
-  distance_cm: number;
-  mode: "WorkOFF" | "WorkON" | "Working";
+interface BandState {
+  current_state: {
+    device: string;
+    mode: "WorkOFF" | "WorkON" | "Working";
+    heart_rate: number;
+    distance_cm: number;
+    timestamp: string;
+  };
+  time_accumulation: {
+    WorkOFF: number;
+    WorkON: number;
+    Working: number;
+  };
+  alerts: Array<{
+    type: string;
+    message: string;
+    timestamp: string;
+    severity: string;
+  }>;
+  is_connected: boolean;
 }
 
 interface ModeCount {
@@ -17,10 +33,10 @@ interface ModeCount {
   Working: number;
 }
 
+const API_URL = "https://iot-band-api.onrender.com";
+
 export default function Home() {
-  const [broker, setBroker] = useState("wss://44.223.43.74");
-  const [topicData, setTopicData] = useState("eloy/band01/data");
-  const [topicAlert, setTopicAlert] = useState("eloy/band01/alerts");
+  const [apiUrl, setApiUrl] = useState(API_URL);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [heartRate, setHeartRate] = useState("--");
@@ -33,9 +49,9 @@ export default function Home() {
   });
   const [logs, setLogs] = useState<string[]>([]);
   const [showLogs, setShowLogs] = useState(false);
-  const clientRef = useRef<any>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const chartRef = useRef<any>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const addLog = (msg: string) => {
     setLogs((prev) => [...prev.slice(-9), `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -137,96 +153,124 @@ export default function Home() {
     ctx.fill();
   };
 
-  const connectMQTT = async () => {
-    setIsConnecting(true);
+  const fetchBandData = async () => {
     try {
-      const mqtt = (window as any).mqtt;
-      if (!mqtt) {
-        toast.error("Biblioteca MQTT não carregada");
-        addLog("ERRO: Biblioteca MQTT não disponível");
-        setIsConnecting(false);
-        return;
+      const response = await fetch(`${apiUrl}/api/band/current`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
 
-      clientRef.current = mqtt.connect(broker);
+      const data: BandState = await response.json();
 
-      clientRef.current.on("connect", () => {
+      // Atualizar estado
+      setHeartRate(data.current_state.heart_rate.toString());
+      setDistance(data.current_state.distance_cm.toString());
+      setMode(data.current_state.mode);
+
+      // Converter tempo acumulado em contagem (aproximado)
+      const timeAccum = data.time_accumulation;
+      const total = timeAccum.WorkOFF + timeAccum.WorkON + timeAccum.Working;
+      
+      if (total > 0) {
+        setModeCounts({
+          WorkOFF: Math.round(timeAccum.WorkOFF),
+          WorkON: Math.round(timeAccum.WorkON),
+          Working: Math.round(timeAccum.Working),
+        });
+      }
+
+      // Atualizar alertas
+      if (data.alerts.length > 0) {
+        setAlerts(data.alerts);
+        data.alerts.forEach((alert) => {
+          toast.error(alert.message, { duration: 5000 });
+        });
+      }
+
+      // Atualizar status de conexão
+      if (!isConnected && data.is_connected) {
         setIsConnected(true);
-        setIsConnecting(false);
-        addLog("✓ Conectado");
-        toast.success("Conectado ao broker MQTT");
-        clientRef.current.subscribe(topicData);
-        clientRef.current.subscribe(topicAlert);
-      });
-
-      clientRef.current.on("message", (topic: string, msg: any) => {
-        const message = msg.toString();
-
-        if (topic === topicData) {
-          try {
-            const data: MQTTData = JSON.parse(message);
-            setHeartRate(data.heart_rate.toString());
-            setDistance(data.distance_cm.toString());
-            setMode(data.mode);
-
-            setModeCounts((prev) => {
-              const updated = { ...prev, [data.mode]: prev[data.mode] + 1 };
-              updateChart(updated);
-              return updated;
-            });
-          } catch (e) {
-            addLog(`Erro ao parsear`);
-          }
-        }
-
-        if (topic === topicAlert) {
-          addLog(`⚠ Alerta: ${message.substring(0, 20)}`);
-          toast.error(message, { duration: 5000 });
-        }
-      });
-
-      clientRef.current.on("error", (error: any) => {
-        addLog(`Erro MQTT`);
-        toast.error(`Erro MQTT: ${error}`);
-      });
-
-      clientRef.current.on("close", () => {
+        addLog("✓ Conectado ao backend");
+        toast.success("Conectado ao backend");
+      } else if (isConnected && !data.is_connected) {
         setIsConnected(false);
-        setIsConnecting(false);
-        addLog("✗ Desconectado");
-        toast.info("Desconectado do broker");
-      });
+        addLog("✗ Backend desconectado do MQTT");
+        toast.warning("Backend desconectado do MQTT");
+      }
+
+      updateChart(modeCounts);
     } catch (error) {
-      addLog(`Erro ao conectar`);
+      if (isConnected) {
+        setIsConnected(false);
+        addLog(`✗ Erro ao conectar: ${error}`);
+        toast.error(`Erro: ${error}`);
+      }
+    }
+  };
+
+  const connectBackend = async () => {
+    setIsConnecting(true);
+    try {
+      // Testar conexão
+      const response = await fetch(`${apiUrl}/health`);
+      if (!response.ok) {
+        throw new Error("Backend não respondeu");
+      }
+
+      addLog("✓ Conectando ao backend...");
+      setIsConnected(true);
+      setIsConnecting(false);
+      toast.success("Conectado ao backend!");
+
+      // Iniciar polling
+      fetchBandData();
+      pollingIntervalRef.current = setInterval(fetchBandData, 2000);
+    } catch (error) {
+      addLog(`✗ Erro ao conectar: ${error}`);
       toast.error(`Erro ao conectar: ${error}`);
       setIsConnecting(false);
     }
   };
 
-  const disconnectMQTT = () => {
-    if (clientRef.current) {
-      clientRef.current.end();
-      setIsConnected(false);
-      addLog("Desconectado");
+  const disconnectBackend = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    setIsConnected(false);
+    addLog("✗ Desconectado");
+    toast.info("Desconectado do backend");
+  };
+
+  const resetData = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/band/reset`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error("Erro ao resetar");
+      }
+      setModeCounts({ WorkOFF: 0, WorkON: 0, Working: 0 });
+      setAlerts([]);
+      addLog("🔄 Dados resetados");
+      toast.success("Dados resetados com sucesso!");
+    } catch (error) {
+      addLog(`✗ Erro ao resetar: ${error}`);
+      toast.error(`Erro ao resetar: ${error}`);
     }
   };
 
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/mqtt/dist/mqtt.min.js";
-    script.async = true;
-    document.head.appendChild(script);
-
     return () => {
-      if (clientRef.current) {
-        clientRef.current.end();
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
       }
     };
   }, []);
 
   useEffect(() => {
     updateChart(modeCounts);
-  }, []);
+  }, [modeCounts]);
 
   return (
     <div className="min-h-screen bg-background text-foreground dark flex flex-col overflow-hidden">
@@ -241,7 +285,7 @@ export default function Home() {
             </div>
             <div className="min-w-0">
               <h1 className="text-base sm:text-xl font-bold truncate">EloyBand</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">Monitor MQTT</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">Monitor REST API</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -269,42 +313,20 @@ export default function Home() {
               <h2 className="text-xs sm:text-sm font-bold">Config</h2>
 
               <div className="space-y-0.5 sm:space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Broker</label>
+                <label className="text-xs font-semibold text-muted-foreground">API URL</label>
                 <Input
-                  value={broker}
-                  onChange={(e) => setBroker(e.target.value)}
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
                   disabled={isConnected}
                   className="text-xs h-7 sm:h-8"
-                  placeholder="wss://broker.emqx.io:8084/mqtt"
-                />
-              </div>
-
-              <div className="space-y-0.5 sm:space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Tópico Dados</label>
-                <Input
-                  value={topicData}
-                  onChange={(e) => setTopicData(e.target.value)}
-                  disabled={isConnected}
-                  className="text-xs h-7 sm:h-8"
-                  placeholder="eloy/band01/data"
-                />
-              </div>
-
-              <div className="space-y-0.5 sm:space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Tópico Alertas</label>
-                <Input
-                  value={topicAlert}
-                  onChange={(e) => setTopicAlert(e.target.value)}
-                  disabled={isConnected}
-                  className="text-xs h-7 sm:h-8"
-                  placeholder="eloy/band01/alerts"
+                  placeholder="https://iot-band-api.onrender.com"
                 />
               </div>
 
               <div className="flex gap-2 pt-0.5 sm:pt-1">
                 {!isConnected ? (
                   <Button
-                    onClick={connectMQTT}
+                    onClick={connectBackend}
                     disabled={isConnecting}
                     className="flex-1 h-7 sm:h-8 text-xs bg-accent hover:bg-accent/90"
                   >
@@ -312,7 +334,7 @@ export default function Home() {
                   </Button>
                 ) : (
                   <Button
-                    onClick={disconnectMQTT}
+                    onClick={disconnectBackend}
                     variant="destructive"
                     className="flex-1 h-7 sm:h-8 text-xs"
                   >
@@ -320,6 +342,15 @@ export default function Home() {
                   </Button>
                 )}
               </div>
+
+              <Button
+                onClick={resetData}
+                disabled={!isConnected}
+                variant="outline"
+                className="w-full h-7 sm:h-8 text-xs"
+              >
+                Reset
+              </Button>
             </Card>
 
             {/* Logs */}
@@ -368,15 +399,15 @@ export default function Home() {
               <div className="mt-1.5 sm:mt-2 flex gap-2 sm:gap-3 text-xs flex-shrink-0 flex-wrap justify-center">
                 <div className="flex items-center gap-1">
                   <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full flex-shrink-0" style={{ backgroundColor: "#ef4444" }} />
-                  <span className="text-xs">OFF: {modeCounts.WorkOFF}</span>
+                  <span className="text-xs">OFF: {modeCounts.WorkOFF}s</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full flex-shrink-0" style={{ backgroundColor: "#22c55e" }} />
-                  <span className="text-xs">ON: {modeCounts.WorkON}</span>
+                  <span className="text-xs">ON: {modeCounts.WorkON}s</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full flex-shrink-0" style={{ backgroundColor: "#a855f7" }} />
-                  <span className="text-xs">WRK: {modeCounts.Working}</span>
+                  <span className="text-xs">WRK: {modeCounts.Working}s</span>
                 </div>
               </div>
             </Card>
@@ -414,7 +445,7 @@ export default function Home() {
                 <div className="rounded-lg bg-muted p-1.5 sm:p-2 flex-shrink-0">
                   <p className="text-xs text-muted-foreground">Total</p>
                   <p className="text-xl sm:text-2xl font-bold">
-                    {modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working}
+                    {modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working}s
                   </p>
                 </div>
 
@@ -422,7 +453,7 @@ export default function Home() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">WorkOFF</p>
-                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.WorkOFF}</p>
+                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.WorkOFF}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
@@ -442,7 +473,7 @@ export default function Home() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">WorkON</p>
-                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.WorkON}</p>
+                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.WorkON}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
@@ -462,7 +493,7 @@ export default function Home() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">Working</p>
-                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.Working}</p>
+                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.Working}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
@@ -477,6 +508,19 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {alerts.length > 0 && (
+                  <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-1.5 sm:p-2 flex-shrink-0">
+                    <p className="text-xs font-bold text-red-500 mb-1">🚨 Alertas Ativos</p>
+                    <div className="space-y-0.5">
+                      {alerts.map((alert, idx) => (
+                        <p key={idx} className="text-xs text-red-400 line-clamp-2">
+                          {alert.message}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           </div>
