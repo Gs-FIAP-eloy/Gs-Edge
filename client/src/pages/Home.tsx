@@ -18,7 +18,7 @@ interface ModeCount {
 }
 
 export default function Home() {
-  const [broker, setBroker] = useState("wss://broker.emqx.io:8084/mqtt");
+  const [broker, setBroker] = useState("wss://44.223.43.74");
   const [topicData, setTopicData] = useState("eloy/band01/data");
   const [topicAlert, setTopicAlert] = useState("eloy/band01/alerts");
   const [isConnected, setIsConnected] = useState(false);
