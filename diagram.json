@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "author": "EloyBand Project",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-v1", "id": "esp", "top": 100, "left": 50, "attrs": {} },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "top": 80,
+      "left": 300,
+      "attrs": { "value": "50%" }
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultra",
+      "top": 200,
+      "left": 300,
+      "attrs": { "distance": "360" }
+    }
+  ],
+  "connections": [
+    [ "pot:GND", "esp:GND.1", "black", [ "v0" ] ],
+    [ "pot:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "pot:SIG", "esp:GPIO34", "green", [ "v0" ] ],
+    [ "ultra:VCC", "esp:5V", "red", [ "v0" ] ],
+    [ "ultra:GND", "esp:GND.2", "black", [ "v0" ] ],
+    [ "ultra:TRIG", "esp:GPIO5", "blue", [ "v0" ] ],
+    [ "ultra:ECHO", "esp:GPIO18", "yellow", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
