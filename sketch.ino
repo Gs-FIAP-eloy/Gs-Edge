@@ -12,32 +12,48 @@ const char* default_PASSWORD = ""; // Senha da rede Wi-Fi
 const char* default_BROKER_MQTT = "44.223.43.74"; 
 const int default_BROKER_PORT = 1883; 
 
-// O backend espera que os dados de batimentos (b) venham do device023
+// O backend espera que os dados de distância (d) e batimentos (b) venham do device023
 const char* DEVICE_ID = "device023"; 
 
-// Tópico de Publicação para Batimentos Cardíacos (O backend escuta por tópicos terminados em /b)
+// Tópicos de Publicação (O backend escuta por tópicos terminados em /d e /b)
+// O backend usa o tópico TEF/device023/attrs/d para distância (d)
+const char* TOPICO_PUBLISH_DIST = "TEF/device023/attrs/d"; 
+// O backend usa o tópico TEF/device023/attrs/b para batimentos (b)
 const char* TOPICO_PUBLISH_HR = "TEF/device023/attrs/b"; 
 
 // Tópico de Escuta (para comandos, se necessário)
 const char* TOPICO_SUBSCRIBE = "TEF/device023/cmd"; 
 
 // --- Configurações dos Pinos ---
+// Sensor Ultrassônico HC-SR04
+const int TRIG_PIN = 5; // Pino TRIG do sensor (Exemplo: GPIO 5)
+const int ECHO_PIN = 18; // Pino ECHO do sensor (Exemplo: GPIO 18)
+
 // Potenciômetro (Simulação de Batimentos Cardíacos)
 const int POT_PIN = 34; // Pino analógico para o potenciômetro (GPIO 34)
 
 // --- Protótipos de Funções ---
+void initUltrasonicSensor();
 void initSerial();
 void reconectWiFi();
 void reconnectMQTT();
 void mqtt_callback(char* topic, byte* payload, unsigned int length);
 void VerificaConexoesWiFIEMQTT();
-void sendHeartRateDataMQTT();
+void sendSensorDataMQTT();
 
 // --- Variáveis Globais ---
 WiFiClient espClient;
 PubSubClient MQTT(espClient);
+long duration;
+int distanceCm;
 
 // --- Funções de Leitura de Sensores ---
+
+void initUltrasonicSensor() {
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+    digitalWrite(TRIG_PIN, LOW);
+}
 
 int readHeartRate() {
     // Lê o valor analógico do potenciômetro (0 a 4095 no ESP32)
@@ -47,6 +63,31 @@ int readHeartRate() {
     int heartRate = map(sensorValue, 0, 4095, 0, 200);
     
     return heartRate;
+}
+
+int readUltrasonicDistance() {
+    // Limpa o pino Trig
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    
+    // Seta o pino Trig em HIGH por 10 microsegundos
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
+    
+    // Lê o pino Echo, retorna a duração da onda sonora em microsegundos
+    duration = pulseIn(ECHO_PIN, HIGH);
+    
+    // Calcula a distância em cm (velocidade do som: 343 m/s ou 0.0343 cm/us)
+    // Distância = (Duração * Velocidade do Som) / 2
+    distanceCm = duration * 0.0343 / 2;
+    
+    // Garante que a distância não seja negativa
+    if (distanceCm < 0) {
+        distanceCm = 0;
+    }
+    
+    return distanceCm;
 }
 
 // --- Funções de Conexão ---
@@ -111,16 +152,25 @@ void VerificaConexoesWiFIEMQTT() {
 
 // --- Funções de Envio de Dados ---
 
-void sendHeartRateDataMQTT() {
+void sendSensorDataMQTT() {
     int heartRate = readHeartRate();
+    int distance = readUltrasonicDistance();
     
-    // Envia Batimentos Cardíacos (Tópico /b)
+    // 1. Envia Batimentos Cardíacos (Tópico /b)
     String hr_msg = String(heartRate);
     MQTT.publish(TOPICO_PUBLISH_HR, hr_msg.c_str());
     Serial.print("Batimentos (Potenciômetro) enviados para ");
     Serial.print(TOPICO_PUBLISH_HR);
     Serial.print(": ");
     Serial.println(hr_msg);
+    
+    // 2. Envia Distância Ultrassônica (Tópico /d)
+    String dist_msg = String(distance);
+    MQTT.publish(TOPICO_PUBLISH_DIST, dist_msg.c_str());
+    Serial.print("Distância (cm) enviada para ");
+    Serial.print(TOPICO_PUBLISH_DIST);
+    Serial.print(": ");
+    Serial.println(dist_msg);
 }
 
 // --- Setup e Loop ---
@@ -132,11 +182,14 @@ void setup() {
     MQTT.setServer(default_BROKER_MQTT, default_BROKER_PORT);
     MQTT.setCallback(mqtt_callback);
     
+    // Inicialização dos Sensores
+    initUltrasonicSensor();
+    
     // Conexão inicial
     reconectWiFi();
     reconnectMQTT();
     
-    Serial.println("\n=== Sketch IoT Band - Potenciômetro MQTT ===");
+    Serial.println("\n=== Sketch IoT Band - MQTT Backend Integrado ===");
     delay(2000);
 }
 
@@ -147,7 +200,7 @@ void loop() {
     MQTT.loop(); 
     
     // Envia os dados dos sensores
-    sendHeartRateDataMQTT();
+    sendSensorDataMQTT();
     
     // Aguarda antes da próxima leitura/envio
     delay(5000); // Envia a cada 5 segundos
