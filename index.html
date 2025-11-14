@@ -11,374 +11,256 @@
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
-    body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 12px; background:#f6f8fa; color:#1f2937; }
-    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
-    h1 { font-size:20px; margin:0; }
-    .card { background:white; border-radius:10px; box-shadow:0 6px 18px rgba(20,20,40,0.06); padding:12px; }
-    .grid { display:grid; grid-template-columns: 420px 1fr; gap:12px; align-items:start; }
-    .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    label { font-size:13px; display:block; margin-bottom:6px; color:#374151; }
-    input[type=text], input[type=number], select { padding:8px; border-radius:8px; border:1px solid #e5e7eb; width:100%; box-sizing:border-box; }
-    button { padding:8px 12px; border-radius:8px; border:0; cursor:pointer; background:#0ea5a3; color:white; }
-    button.ghost { background:#e6f7f6; color:#064e4a; border:1px solid #cceae8; }
-    .row { display:flex; gap:8px; }
-    .small { font-size:13px; color:#6b7280; }
-    .info { display:flex; gap:12px; flex-direction:column; }
-    .metric { background:#fff; padding:8px; border-radius:8px; }
-    #log { max-height:220px; overflow:auto; font-family:monospace; font-size:13px; background:#0f1724; color:#e6eef4; padding:8px; border-radius:6px; }
-    .alerts { max-height:140px; overflow:auto; }
-    .badge { padding:6px 10px; border-radius:999px; background:#111827; color:white; display:inline-block; }
+    body {
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto;
+      margin: 12px;
+      background: #0d1117;
+      color: #e6edf3;
+    }
+    header {
+      display:flex;
+      justify-content:space-between;
+      margin-bottom:12px;
+    }
+    h1 {
+      font-size:20px;
+      margin:0;
+      color:#fff;
+    }
+
+    .card {
+      background:#161b22;
+      border-radius:10px;
+      padding:12px;
+      border:1px solid #30363d;
+    }
+
+    input {
+      background:#0d1117;
+      border:1px solid #30363d;
+      color:#e6edf3;
+      border-radius:8px;
+      padding:8px;
+      width:100%;
+    }
+
+    button {
+      background:#2385f4;
+      border:0;
+      padding:8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      color:white;
+      margin-top:10px;
+      width:100%;
+    }
+
+    #log {
+      background:#0a0f16;
+      border:1px solid #30363d;
+      max-height:260px;
+      overflow:auto;
+      padding:8px;
+      font-family:monospace;
+    }
+
+    .metric {
+      background:#0f141a;
+      border-radius:8px;
+      padding:10px;
+      border:1px solid #30363d;
+      margin-bottom:10px;
+    }
+
+    .grid {
+      display:grid;
+      grid-template-columns: 380px 1fr;
+      gap:14px;
+    }
+
+    #alerts {
+      background:#121820;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #30363d;
+      max-height:140px;
+      overflow-y:auto;
+    }
+
+    canvas {
+      background:#0f141a;
+      border-radius:10px;
+      padding:10px;
+      border:1px solid #30363d;
+    }
   </style>
 </head>
+
 <body>
+
   <header>
-    <h1>EloyBand — Dashboard MQTT (Demo)</h1>
-    <div class="small">Modo: <span id="connStatus">desconectado</span></div>
+    <h1>EloyBand — Dashboard</h1>
+    <small>MQTT Monitor</small>
   </header>
 
   <div class="grid">
-    <!-- Left: Chart + connection controls -->
-    <div class="card">
-      <div style="margin-bottom:10px;">
-        <label>Broker / WebSocket URL</label>
-        <input id="brokerUrl" type="text" value="wss://broker.emqx.io:8084/mqtt" />
+    <!-- Painel esquerdo -->
+    <div>
+      <div class="card">
+        <h3>Configuração MQTT</h3>
+        <label>Broker:</label>
+        <input id="broker" value="wss://broker.emqx.io:8084/mqtt">
+
+        <label style="margin-top:10px;">Tópico Dados:</label>
+        <input id="topicData" value="eloy/band01/data">
+
+        <label style="margin-top:10px;">Tópico Alertas:</label>
+        <input id="topicAlert" value="eloy/band01/alerts">
+
+        <button onclick="conectar()">Conectar</button>
       </div>
 
-      <div style="display:flex; gap:8px; margin-bottom:10px;">
-        <div style="flex:1">
-          <label>Tópico de dados</label>
-          <input id="topicData" type="text" value="eloy/band01/data" />
-        </div>
-        <div style="width:140px">
-          <label>Tópico alertas</label>
-          <input id="topicAlerts" type="text" value="eloy/band01/alerts" />
-        </div>
+      <br>
+
+      <div class="metric">
+        <h3>Heart Rate</h3>
+        <div id="m_hr">--</div>
       </div>
 
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <button id="btnConnect">Conectar</button>
-        <button id="btnDisconnect" class="ghost">Desconectar</button>
-        <button id="btnSendTest" class="ghost">Enviar alerta teste</button>
+      <div class="metric">
+        <h3>Distância (cm)</h3>
+        <div id="m_dist">--</div>
       </div>
 
-      <div style="display:flex; gap:12px; align-items:center;">
-        <canvas id="modeChart" width="360" height="360"></canvas>
+      <div class="metric">
+        <h3>Modo</h3>
+        <div id="m_mode">--</div>
       </div>
 
-      <div style="margin-top:10px; display:flex; gap:8px;">
-        <div style="flex:1" class="small">
-          <div class="metric"><strong>Modo atual:</strong> <span id="currentMode">—</span></div>
-          <div class="metric"><strong>BPM (HR):</strong> <span id="currentHR">—</span></div>
-          <div class="metric"><strong>Distance cm:</strong> <span id="currentDist">—</span></div>
-        </div>
+      <div class="metric">
+        <h3>Total de Mensagens Recebidas</h3>
+        <div id="m_count">0</div>
+      </div>
+
+      <div class="card">
+        <h3>Log</h3>
+        <div id="log"></div>
       </div>
     </div>
 
-    <!-- Right: Timers, alerts, logs -->
-    <div class="card info">
-      <div style="display:flex; gap:8px;">
-        <div style="flex:1;">
-          <label>Tempos acumulados</label>
-          <div class="metric">
-            <div><strong>WorkOFF:</strong> <span id="timeWorkOff">00:00:00</span></div>
-            <div><strong>WorkON:</strong> <span id="timeWorkOn">00:00:00</span></div>
-            <div><strong>Working:</strong> <span id="timeWorking">00:00:00</span></div>
-          </div>
-        </div>
-
-        <div style="width:240px">
-          <label>Controle de turno (opcional)</label>
-          <div class="metric" style="display:flex; gap:8px; flex-direction:column;">
-            <div style="display:flex; gap:6px;">
-              <input id="expectedShiftMinutes" type="number" min="1" value="480" />
-              <div class="small" style="align-self:center">min (padrão: 480 = 8h)</div>
-            </div>
-            <div style="display:flex; gap:6px;">
-              <button id="btnStartShift" class="ghost">Iniciar Turno</button>
-              <button id="btnEndShift" class="ghost">Encerrar Turno</button>
-            </div>
-            <div class="small">Status do turno: <span id="shiftStatus">Inativo</span></div>
-            <div class="small">Resultado: <span id="shiftResult">—</span></div>
-          </div>
-        </div>
+    <!-- Painel direito -->
+    <div>
+      <div class="card">
+        <h3>Gráfico de Tempo por Modo</h3>
+        <canvas id="modeChart" width="300" height="300"></canvas>
       </div>
 
-      <div style="margin-top:10px;">
-        <label>Overworking contínuo</label>
-        <div class="metric">
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input id="overworkThresholdMinutes" type="number" value="90" min="1" />
-            <div class="small">min (limite contínuo)</div>
-            <button id="btnResetTimers" class="ghost">Resetar tempos</button>
-          </div>
-          <div style="margin-top:8px;">
-            <strong>Tempo contínuo em Working:</strong> <span id="continuousWorking">00:00:00</span>
-          </div>
-        </div>
-      </div>
+      <br>
 
-      <div style="margin-top:10px;">
-        <label>Alertas recebidos</label>
-        <div class="metric alerts" id="alertsBox">
-          <!-- alert lines -->
-        </div>
-      </div>
-
-      <div style="margin-top:10px;">
-        <label>Log MQTT</label>
-        <div id="log" class="card"></div>
+      <div class="card">
+        <h3>Alertas</h3>
+        <div id="alerts"></div>
       </div>
     </div>
   </div>
 
-<script>
-/* ---------- Config / Estado ---------- */
-let client = null;
-let connected = false;
-const defaultBroker = document.getElementById('brokerUrl').value;
-const topicDataEl = document.getElementById('topicData');
-const topicAlertsEl = document.getElementById('topicAlerts');
+  <script>
+    let client = null;
+    let msgCount = 0;
 
-let lastMode = null;
-let lastMsgTime = null;
+    // tempo acumulado por modo
+    const modeTime = {
+      WorkOFF: 0,
+      WorkON: 0,
+      Working: 0
+    };
 
-// accumulated seconds
-let secs = { WorkOFF:0, WorkON:0, Working:0 };
-let continuousWorking = 0;
-let overworkAlerted = false;
+    let lastMode = null;
+    let lastTimestamp = null;
 
-// shift control
-let shiftActive = false;
-let shiftStart = null;
-let expectedShiftMinutes = () => parseInt(document.getElementById('expectedShiftMinutes').value || "480");
-
-/* ---------- Helpers ---------- */
-function log(msg) {
-  const l = document.getElementById('log');
-  const now = new Date().toLocaleTimeString();
-  l.innerText = `[${now}] ${msg}\n` + l.innerText;
-}
-function addAlert(text, type='info') {
-  const box = document.getElementById('alertsBox');
-  const div = document.createElement('div');
-  div.style.padding = '6px';
-  div.style.borderBottom = '1px solid #eef2f7';
-  div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> — ${text}`;
-  box.prepend(div);
-}
-
-/* ---------- Chart ---------- */
-const ctx = document.getElementById('modeChart').getContext('2d');
-const modeChart = new Chart(ctx, {
-  type: 'doughnut',
-  data: {
-    labels: ['WorkOFF','WorkON','Working'],
-    datasets: [{
-      label: 'Tempos (s)',
-      data: [0,0,0],
-      backgroundColor: ['#9CA3AF','#60A5FA','#34D399'],
-      hoverOffset: 8
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { position: 'bottom' },
-      title: { display:true, text: 'Distribuição dos modos (desde que o dashboard abriu)' }
+    function log(msg) {
+      const logBox = document.getElementById("log");
+      logBox.innerHTML += msg + "<br>";
+      logBox.scrollTop = logBox.scrollHeight;
     }
-  }
-});
 
-/* ---------- Format hh:mm:ss ---------- */
-function fmtSecToHMS(s) {
-  s = Math.max(0, Math.floor(s));
-  const h = Math.floor(s/3600);
-  const m = Math.floor((s%3600)/60);
-  const sec = s%60;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-}
-
-/* ---------- Connection controls ---------- */
-document.getElementById('btnConnect').addEventListener('click', () => {
-  const url = document.getElementById('brokerUrl').value.trim();
-  if (!url) { alert('Informe URL do broker WebSocket.'); return; }
-  connectMQTT(url);
-});
-document.getElementById('btnDisconnect').addEventListener('click', () => {
-  if (client && connected) client.end(true);
-});
-document.getElementById('btnSendTest').addEventListener('click', () => {
-  if (!client || !connected) { alert('Conecte-se primeiro.'); return; }
-  const topic = topicAlertsEl.value;
-  const msg = `ALERTA_MANUAL: Verificação do dashboard em ${new Date().toLocaleTimeString()}`;
-  client.publish(topic, msg);
-  log('Publicado alerta manual -> ' + msg);
-});
-
-/* ---------- Shift controls ---------- */
-document.getElementById('btnStartShift').addEventListener('click', () => {
-  if (shiftActive) return alert('Turno já ativo.');
-  shiftActive = true;
-  shiftStart = Date.now();
-  document.getElementById('shiftStatus').innerText = 'Ativo';
-  document.getElementById('shiftResult').innerText = '—';
-  addAlert('Turno iniciado (controle manual).');
-});
-document.getElementById('btnEndShift').addEventListener('click', () => {
-  if (!shiftActive) return alert('Nenhum turno ativo.');
-  shiftActive = false;
-  const durSec = (Date.now() - shiftStart) / 1000;
-  const expected = expectedShiftMinutes() * 60;
-  document.getElementById('shiftStatus').innerText = 'Inativo';
-  const workOnSec = secs.WorkON;
-  if (workOnSec < expected) {
-    const msg = `Alerta: tempo WorkON (${fmtSecToHMS(workOnSec)}) < esperado (${expectedShiftMinutes()} min).`;
-    document.getElementById('shiftResult').innerText = 'Abaixo do esperado';
-    addAlert(msg);
-    // também publica um alerta opcional:
-    if (client && connected) client.publish(topicAlertsEl.value, JSON.stringify({ type:'shift_short', detail: msg }));
-  } else {
-    document.getElementById('shiftResult').innerText = 'OK';
-    addAlert('Turno encerrado — WorkON >= esperado');
-  }
-});
-
-/* ---------- Reset timers ---------- */
-document.getElementById('btnResetTimers').addEventListener('click', () => {
-  secs = { WorkOFF:0, WorkON:0, Working:0 };
-  continuousWorking = 0;
-  overworkAlerted = false;
-  updateUI();
-  addAlert('Tempos resetados manualmente.');
-});
-
-/* ---------- MQTT Connect ---------- */
-function connectMQTT(brokerUrl) {
-  try {
-    log('Tentando conectar: ' + brokerUrl);
-    document.getElementById('connStatus').innerText = 'conectando...';
-    client = mqtt.connect(brokerUrl, { reconnectPeriod: 3000, connectTimeout: 30*1000 });
-
-    client.on('connect', () => {
-      connected = true;
-      document.getElementById('connStatus').innerText = 'conectado';
-      log('Conectado ao broker via WebSocket.');
-      // subscrever
-      const t = topicDataEl.value;
-      const ta = topicAlertsEl.value;
-      client.subscribe(t, { qos: 0 }, (err) => { if (!err) log('Subscribed: ' + t); else log('Erro subscribe: ' + err); });
-      client.subscribe(ta, { qos: 0 }, (err) => { if (!err) log('Subscribed: ' + ta); else log('Erro subscribe: ' + err); });
-    });
-
-    client.on('reconnect', () => {
-      document.getElementById('connStatus').innerText = 'reconectando...';
-      log('Reconectando...');
-    });
-    client.on('error', (err) => {
-      document.getElementById('connStatus').innerText = 'erro';
-      log('MQTT error: ' + err);
-    });
-    client.on('close', () => {
-      connected = false;
-      document.getElementById('connStatus').innerText = 'desconectado';
-      log('Conexão fechada.');
-    });
-
-    client.on('message', (topic, payload) => {
-      try {
-        const msg = payload.toString();
-        log(`Recebido [${topic}] -> ${msg}`);
-        if (topic === topicDataEl.value) {
-          handleDataMessage(msg);
-        } else if (topic === topicAlertsEl.value) {
-          addAlert('ALERTA do broker: ' + msg);
-        } else {
-          // outros tópicos
-          addAlert(`[${topic}] ${msg}`);
-        }
-      } catch (e) {
-        log('Erro ao processar mensagem: ' + e);
+    // Chart.js — gráfico de rosca
+    const ctx = document.getElementById("modeChart").getContext("2d");
+    const modeChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["WorkOFF", "WorkON", "Working"],
+        datasets: [{
+          data: [0, 0, 0],
+          backgroundColor: ["#374151", "#1d4ed8", "#059669"]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: "white" } } }
       }
     });
 
-  } catch (e) {
-    log('Erro conexão: ' + e);
-  }
-}
+    function atualizarGrafico() {
+      const total = modeTime.WorkOFF + modeTime.WorkON + modeTime.Working;
+      if (total === 0) return;
 
-/* ---------- Data message parsing ---------- */
-function handleDataMessage(msg) {
-  let obj = null;
-  try {
-    obj = JSON.parse(msg);
-  } catch (e) {
-    // se não for JSON, apenas log
-    addAlert('Mensagem não JSON recebida em data topic: ' + msg);
-    return;
-  }
-  const hr = obj.heart_rate ?? null;
-  const dist = obj.distance_cm ?? (obj.distance ?? null);
-  const mode = obj.mode ?? null;
-
-  document.getElementById('currentHR').innerText = (hr === 0 ? '0' : (hr ?? '—'));
-  document.getElementById('currentDist').innerText = (dist ?? '—');
-  if (mode) {
-    setMode(mode);
-  }
-}
-
-/* ---------- Mode handling & timers ---------- */
-function setMode(mode) {
-  if (mode !== lastMode) {
-    // modo trocado
-    lastMode = mode;
-    addAlert('Modo atualizado -> ' + mode);
-    // reset continuousWorking if saiu de Working
-    if (mode !== 'Working') {
-      continuousWorking = 0;
-      overworkAlerted = false;
+      modeChart.data.datasets[0].data = [
+        (modeTime.WorkOFF / total) * 100,
+        (modeTime.WorkON / total) * 100,
+        (modeTime.Working / total) * 100
+      ];
+      modeChart.update();
     }
-  }
-  document.getElementById('currentMode').innerText = mode;
-  lastMsgTime = Date.now();
-}
 
-/* ---------- Per-second ticker atualiza tempos ---------- */
-setInterval(() => {
-  // se não houve mensagem ainda, nada
-  if (!lastMode) {
-    updateUI();
-    return;
-  }
-  // incrementa 1 segundo no modo atual
-  if (secs[lastMode] !== undefined) secs[lastMode] += 1;
-  // continuous working
-  if (lastMode === 'Working') {
-    continuousWorking += 1;
-    // checar threshold
-    const thresh = parseInt(document.getElementById('overworkThresholdMinutes').value || "90") * 60;
-    if (continuousWorking >= thresh && !overworkAlerted) {
-      overworkAlerted = true;
-      const msg = `ALERTA_OVERWORK: Funcionário em Working contínuo por ${fmtSecToHMS(continuousWorking)} (limite ${thresh/60} min).`;
-      addAlert(msg);
-      // publicar alerta para tópico de alertas
-      if (client && connected) client.publish(topicAlertsEl.value, msg);
+    function conectar() {
+      const broker = document.getElementById("broker").value;
+      const topicData = document.getElementById("topicData").value;
+      const topicAlert = document.getElementById("topicAlert").value;
+
+      log("Conectando ao broker...");
+
+      client = mqtt.connect(broker);
+
+      client.on("connect", () => {
+        log("Conectado com sucesso!");
+        client.subscribe(topicData);
+        client.subscribe(topicAlert);
+      });
+
+      client.on("message", (topic, payload) => {
+        const msg = payload.toString();
+        msgCount++;
+        document.getElementById("m_count").innerText = msgCount;
+
+        if (topic === topicAlert) {
+          const a = document.getElementById("alerts");
+          a.innerHTML += `<div style='color:#ff5555'>${msg}</div>`;
+          return;
+        }
+
+        try {
+          const data = JSON.parse(msg);
+
+          document.getElementById("m_hr").innerText = data.heart_rate;
+          document.getElementById("m_dist").innerText = data.distance_cm;
+          document.getElementById("m_mode").innerText = data.mode;
+
+          // cálculo de tempo
+          const now = Date.now();
+          if (lastTimestamp && lastMode) {
+            modeTime[lastMode] += (now - lastTimestamp);
+            atualizarGrafico();
+          }
+
+          lastMode = data.mode;
+          lastTimestamp = now;
+
+        } catch (e) {
+          log("Erro ao parsear JSON");
+        }
+      });
     }
-  }
-  updateUI();
-}, 1000);
-
-/* ---------- UI update ---------- */
-function updateUI() {
-  document.getElementById('timeWorkOff').innerText = fmtSecToHMS(secs.WorkOFF);
-  document.getElementById('timeWorkOn').innerText = fmtSecToHMS(secs.WorkON);
-  document.getElementById('timeWorking').innerText = fmtSecToHMS(secs.Working);
-  document.getElementById('continuousWorking').innerText = fmtSecToHMS(continuousWorking);
-
-  // atualizar chart com valores relativos (em segundos)
-  modeChart.data.datasets[0].data = [secs.WorkOFF, secs.WorkON, secs.Working];
-  modeChart.update();
-}
-</script>
+  </script>
 </body>
 </html>
