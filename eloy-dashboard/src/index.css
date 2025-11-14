@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+:root { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial }
+body { margin: 0; background: #f8fafc }
+
+/* Tailwind-like minimal utilities (so it looks ok without installing Tailwind) */
+.min-h-screen { min-height: 100vh }
+.bg-slate-50 { background: #f8fafc }
+.bg-white { background: #ffffff }
+.text-green-600 { color: #16a34a }
+.text-red-600 { color: #dc2626 }
+.text-slate-500 { color: #6b7280 }
+.rounded-2xl { border-radius: 16px }
+.rounded-lg { border-radius: 8px }
+.shadow { box-shadow: 0 6px 18px rgba(12,12,12,0.06) }
+.shadow-sm { box-shadow: 0 2px 6px rgba(12,12,12,0.04) }
+.p-6 { padding: 1.5rem }
+.p-4 { padding: 1rem }
+.mt-2 { margin-top: 0.5rem }
+.mt-4 { margin-top: 1rem }
+.mt-6 { margin-top: 1.5rem }
+.mb-6 { margin-bottom: 1.5rem }
+.max-w-5xl { max-width: 80rem }
+.mx-auto { margin-left: auto; margin-right: auto }
+.grid { display: grid }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) }
+.md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+.col-span-2 { grid-column: span 2 / span 2 }
+.gap-6 { gap: 1.5rem }
+.flex { display: flex }
+.items-center { align-items: center }
+.justify-between { justify-content: space-between }
+.font-sans { font-family: 'Inter', sans-serif }
+.font-bold { font-weight: 700 }
+.font-medium { font-weight: 600 }
+.text-2xl { font-size: 1.5rem }
+.text-lg { font-size: 1.125rem }
+.text-sm { font-size: 0.875rem }

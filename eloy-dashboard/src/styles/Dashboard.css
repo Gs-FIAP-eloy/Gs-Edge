@@ -1,0 +1,49 @@
+.dashboard {
+  padding: 30px;
+  font-family: "Poppins", sans-serif;
+  color: #222;
+}
+
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.connected {
+  background: #44ff99;
+  color: #003b1f;
+}
+
+.disconnected {
+  background: #ff7b7b;
+  color: #3b0000;
+}
+
+.tech-card-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.section-title {
+  margin-top: 30px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.chart-box {
+  margin-top: 20px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px #00000020;
+}

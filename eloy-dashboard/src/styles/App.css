@@ -1,0 +1,32 @@
+.dashboard h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 30px;
+  text-shadow: 0 0 12px rgba(183, 123, 255, 0.4);
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-connected {
+  background: rgba(68, 255, 153, 0.15);
+  color: var(--neon-green);
+  border: 1px solid var(--neon-green);
+}
+
+.status-disconnected {
+  background: rgba(255, 59, 59, 0.15);
+  color: #ff3b3b;
+  border: 1px solid #ff3b3b;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
