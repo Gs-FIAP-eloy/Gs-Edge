@@ -3,11 +3,11 @@ import json
 import time
 import random
 
-BROKER = "broker.emqx.io"
+BROKER = "44.223.43.74"
 PORT = 1883
 
-TOPIC_DATA = "eloy/band01/data"
-TOPIC_ALERTS = "eloy/band01/alerts"
+TOPIC_DATA = "TEF/device023/attrs/d"
+TOPIC_ALERTS = "TEF/device023/attrs/a"
 
 client = mqtt.Client()
 client.connect(BROKER, PORT, 60)
