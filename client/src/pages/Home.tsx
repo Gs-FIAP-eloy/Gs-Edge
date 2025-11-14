@@ -192,12 +192,10 @@ export default function Home() {
         setIsConnected(true);
         previousConnectionStateRef.current = true;
         addLog("✓ Conectado ao backend");
-        toast.success("Conectado ao backend");
       } else if (previousConnectionStateRef.current && !data.is_connected) {
         setIsConnected(false);
         previousConnectionStateRef.current = false;
         addLog("✗ Backend desconectado do MQTT");
-        toast.warning("Backend desconectado do MQTT");
       }
 
       updateChart(modeCounts);
@@ -205,7 +203,6 @@ export default function Home() {
       if (isConnected) {
         setIsConnected(false);
         addLog(`✗ Erro ao conectar: ${error}`);
-        toast.error(`Erro: ${error}`);
       }
     }
   };
@@ -223,12 +220,14 @@ export default function Home() {
       setIsConnected(true);
       previousConnectionStateRef.current = true;
       setIsConnecting(false);
+      toast.success("Conectado ao backend!");
 
       // Iniciar polling
       fetchBandData();
       pollingIntervalRef.current = setInterval(fetchBandData, 2000);
     } catch (error) {
       addLog(`✗ Erro ao conectar: ${error}`);
+      toast.error(`Erro ao conectar: ${error}`);
       setIsConnecting(false);
     }
   };
@@ -253,7 +252,7 @@ export default function Home() {
         throw new Error("Erro ao resetar");
       }
       setModeCounts({ WorkOFF: 0, WorkON: 0, Working: 0 });
-      setAlerts([]);
+      setCurrentAlert(null);
       addLog("🔄 Dados resetados");
       toast.success("Dados resetados com sucesso!");
     } catch (error) {
