@@ -52,6 +52,8 @@ export default function Home() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const previousConnectionStateRef = useRef<boolean>(false);
+  const shownAlertsRef = useRef<Set<string>>(new Set());
 
   const addLog = (msg: string) => {
     setLogs((prev) => [...prev.slice(-9), `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -179,21 +181,30 @@ export default function Home() {
         });
       }
 
-      // Atualizar alertas
+      // Atualizar alertas (apenas mostrar novos alertas)
       if (data.alerts.length > 0) {
         setAlerts(data.alerts);
         data.alerts.forEach((alert) => {
-          toast.error(alert.message, { duration: 5000 });
+          const alertKey = `${alert.type}-${alert.timestamp}`;
+          if (!shownAlertsRef.current.has(alertKey)) {
+            shownAlertsRef.current.add(alertKey);
+            toast.error(alert.message, { duration: 5000 });
+          }
         });
+      } else {
+        setAlerts([]);
+        shownAlertsRef.current.clear();
       }
 
-      // Atualizar status de conexão
-      if (!isConnected && data.is_connected) {
+      // Atualizar status de conexão (apenas quando há mudança)
+      if (!previousConnectionStateRef.current && data.is_connected) {
         setIsConnected(true);
+        previousConnectionStateRef.current = true;
         addLog("✓ Conectado ao backend");
         toast.success("Conectado ao backend");
-      } else if (isConnected && !data.is_connected) {
+      } else if (previousConnectionStateRef.current && !data.is_connected) {
         setIsConnected(false);
+        previousConnectionStateRef.current = false;
         addLog("✗ Backend desconectado do MQTT");
         toast.warning("Backend desconectado do MQTT");
       }
@@ -219,6 +230,7 @@ export default function Home() {
 
       addLog("✓ Conectando ao backend...");
       setIsConnected(true);
+      previousConnectionStateRef.current = true;
       setIsConnecting(false);
       toast.success("Conectado ao backend!");
 
@@ -238,6 +250,7 @@ export default function Home() {
       pollingIntervalRef.current = null;
     }
     setIsConnected(false);
+    previousConnectionStateRef.current = false;
     addLog("✗ Desconectado");
     toast.info("Desconectado do backend");
   };
