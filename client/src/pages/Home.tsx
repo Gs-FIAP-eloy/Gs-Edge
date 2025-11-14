@@ -49,11 +49,10 @@ export default function Home() {
   });
   const [logs, setLogs] = useState<string[]>([]);
   const [showLogs, setShowLogs] = useState(false);
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [currentAlert, setCurrentAlert] = useState<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const previousConnectionStateRef = useRef<boolean>(false);
-  const shownAlertsRef = useRef<Set<string>>(new Set());
 
   const addLog = (msg: string) => {
     setLogs((prev) => [...prev.slice(-9), `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -181,19 +180,11 @@ export default function Home() {
         });
       }
 
-      // Atualizar alertas (apenas mostrar novos alertas)
+      // Atualizar alerta (mostrar na tela, substituindo o anterior)
       if (data.alerts.length > 0) {
-        setAlerts(data.alerts);
-        data.alerts.forEach((alert) => {
-          const alertKey = `${alert.type}-${alert.timestamp}`;
-          if (!shownAlertsRef.current.has(alertKey)) {
-            shownAlertsRef.current.add(alertKey);
-            toast.error(alert.message, { duration: 5000 });
-          }
-        });
+        setCurrentAlert(data.alerts[0]);
       } else {
-        setAlerts([]);
-        shownAlertsRef.current.clear();
+        setCurrentAlert(null);
       }
 
       // Atualizar status de conexão (apenas quando há mudança)
@@ -232,14 +223,12 @@ export default function Home() {
       setIsConnected(true);
       previousConnectionStateRef.current = true;
       setIsConnecting(false);
-      toast.success("Conectado ao backend!");
 
       // Iniciar polling
       fetchBandData();
       pollingIntervalRef.current = setInterval(fetchBandData, 2000);
     } catch (error) {
       addLog(`✗ Erro ao conectar: ${error}`);
-      toast.error(`Erro ao conectar: ${error}`);
       setIsConnecting(false);
     }
   };
@@ -280,6 +269,16 @@ export default function Home() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    // Fechar alerta após 10 segundos se não houver novo
+    if (currentAlert) {
+      const timer = setTimeout(() => {
+        setCurrentAlert(null);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentAlert]);
 
   useEffect(() => {
     updateChart(modeCounts);
@@ -522,16 +521,12 @@ export default function Home() {
                   </div>
                 </div>
 
-                {alerts.length > 0 && (
+                {currentAlert && (
                   <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-1.5 sm:p-2 flex-shrink-0">
-                    <p className="text-xs font-bold text-red-500 mb-1">🚨 Alertas Ativos</p>
-                    <div className="space-y-0.5">
-                      {alerts.map((alert, idx) => (
-                        <p key={idx} className="text-xs text-red-400 line-clamp-2">
-                          {alert.message}
-                        </p>
-                      ))}
-                    </div>
+                    <p className="text-xs font-bold text-red-500 mb-1">🚨 {currentAlert.type}</p>
+                    <p className="text-xs text-red-400">
+                      {currentAlert.message}
+                    </p>
                   </div>
                 )}
               </div>
