@@ -29,6 +29,10 @@ async def lifespan(app: FastAPI):
     
     # Startup
     print("🚀 Starting IoT Band Data API...")
+    print(f"📡 MQTT Broker: {BROKER}:{PORT}")
+    print(f"📡 Data Topic: {TOPIC_DATA}")
+    print(f"📡 Alerts Topic: {TOPIC_ALERTS}")
+    
     processor = BandDataProcessor(BROKER, PORT, TOPIC_DATA, TOPIC_ALERTS)
     processor.connect()
     
@@ -84,6 +88,8 @@ async def get_status():
         "topics": {
             "data": processor.topic_data,
             "alerts": processor.topic_alerts,
+            "heartrate": processor.topic_heartrate,
+            "distance": processor.topic_distance,
         },
     }
 

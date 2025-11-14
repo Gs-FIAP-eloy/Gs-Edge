@@ -32,6 +32,11 @@ class BandDataProcessor:
         self.topic_data = topic_data
         self.topic_alerts = topic_alerts
         
+        # Extract base topic (e.g., "TEF/device023/attrs")
+        base_topic = topic_data.rsplit('/', 1)[0] if '/' in topic_data else topic_data
+        self.topic_heartrate = f"{base_topic}/b"  # Heart rate topic for Wokwi
+        self.topic_distance = f"{base_topic}/d"   # Distance topic for Wokwi
+        
         # MQTT Client
         try:
             # Para paho-mqtt >= 2.0
@@ -89,12 +94,23 @@ class BandDataProcessor:
         if rc == 0:
             print(f"✅ Connected to MQTT broker at {self.broker}:{self.port}")
             self.is_connected = True
+            
+            # Subscribe to JSON format topic (Python simulator)
             client.subscribe(self.topic_data)
+            print(f"📡 Subscribed to data topic: {self.topic_data}")
+            
+            # Subscribe to alerts
             client.subscribe(self.topic_alerts)
+            print(f"📡 Subscribed to alerts topic: {self.topic_alerts}")
+            
             # Subscribe to Wokwi format topics (distance and heart rate)
-            client.subscribe(f"{self.topic_data.replace('/d', '')}/b")  # Heart rate topic
-            print(f"📡 Subscribed to topics: {self.topic_data}, {self.topic_alerts}")
-            print(f"📡 Also subscribed to Wokwi format: distance (d) and heart rate (b)")
+            client.subscribe(self.topic_distance)
+            print(f"📡 Subscribed to Wokwi distance topic: {self.topic_distance}")
+            
+            client.subscribe(self.topic_heartrate)
+            print(f"📡 Subscribed to Wokwi heart rate topic: {self.topic_heartrate}")
+            
+            print("✅ All subscriptions completed successfully!")
         else:
             print(f"❌ Failed to connect, return code {rc}")
             self.is_connected = False
@@ -109,8 +125,16 @@ class BandDataProcessor:
 
     def _on_message(self, client, userdata, msg):
         """Callback for when a message is received from the broker."""
+        print(f"📨 Message received on topic: {msg.topic}")
+        print(f"   Payload: {msg.payload.decode()}")
+        
         try:
-            # Try to decode as JSON first (Python simulator format)
+            if msg.topic == self.topic_heartrate or msg.topic == self.topic_distance or msg.topic.endswith('/b') or msg.topic.endswith('/d'):
+                # Process as Wokwi format (raw values)
+                self._process_wokwi_format(msg.topic, msg.payload.decode())
+                return
+            
+            # Try to decode as JSON (Python simulator format)
             try:
                 payload = json.loads(msg.payload.decode())
                 
@@ -118,12 +142,15 @@ class BandDataProcessor:
                     self._process_data_message(payload)
                 elif msg.topic == self.topic_alerts:
                     self._process_alert_message(payload)
+                else:
+                    print(f"⚠️  Received JSON on unexpected topic: {msg.topic}")
             except json.JSONDecodeError:
-                # If not JSON, treat as raw value (Wokwi format)
-                self._process_wokwi_format(msg.topic, msg.payload.decode())
+                print(f"⚠️  Could not parse message as JSON on topic: {msg.topic}")
                 
         except Exception as e:
             print(f"❌ Error processing message: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _process_data_message(self, data: Dict[str, Any]):
         """Process incoming data from the band (Python simulator format)."""
@@ -150,21 +177,24 @@ class BandDataProcessor:
         with self.lock:
             try:
                 # Parse the value as a number
-                numeric_value = float(value)
+                numeric_value = float(value.strip())
                 
                 # Determine if it's distance (d) or heart rate (b)
-                if topic.endswith('/d'):
+                if topic == self.topic_distance or topic.endswith('/d'):
                     self.wokwi_data["distance_cm"] = numeric_value
-                    print(f"📊 [Wokwi] Distance received: {numeric_value}cm")
-                elif topic.endswith('/b'):
+                    print(f"✅ [Wokwi] Distance received: {numeric_value}cm")
+                elif topic == self.topic_heartrate or topic.endswith('/b'):
                     self.wokwi_data["heart_rate"] = numeric_value
-                    print(f"📊 [Wokwi] Heart rate received: {numeric_value}bpm")
+                    print(f"✅ [Wokwi] Heart rate received: {numeric_value}bpm")
+                else:
+                    print(f"⚠️  Unknown Wokwi topic: {topic}")
+                    return
                 
                 # Update current state with Wokwi data
                 self._update_state_from_wokwi()
                 
-            except ValueError:
-                print(f"⚠️  Could not parse Wokwi value: {value}")
+            except ValueError as e:
+                print(f"⚠️  Could not parse Wokwi value: {value} - Error: {e}")
 
     def _update_state_from_wokwi(self):
         """Update the current state based on Wokwi data and calculate mode."""
@@ -195,6 +225,8 @@ class BandDataProcessor:
         
         # Check for alerts
         self._check_alerts()
+        
+        print(f"🔄 [Wokwi] Current State: {mode} | HR: {heart_rate}bpm | Dist: {distance}cm")
 
     def _process_alert_message(self, data: Any):
         """Process alert messages from MQTT."""
@@ -267,7 +299,7 @@ class BandDataProcessor:
                 "percentages": {
                     "WorkOFF": (self.time_accumulation["WorkOFF"] / total_time * 100) if total_time > 0 else 0,
                     "WorkON": (self.time_accumulation["WorkON"] / total_time * 100) if total_time > 0 else 0,
-                    "Working": (self.time_accumulation["Working"] / total_time * 100) if total_time > 0 else 0,
+                "Working": (self.time_accumulation["Working"] / total_time * 100) if total_time > 0 else 0,
                 },
                 "alert_history": self.alert_history,
             }
