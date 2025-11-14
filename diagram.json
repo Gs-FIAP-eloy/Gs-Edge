@@ -1,32 +1,27 @@
 {
   "version": 1,
-  "author": "EloyBand Project",
+  "author": "Lucas Augusto",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-esp32-devkit-v1", "id": "esp", "top": 100, "left": 50, "attrs": {} },
-    {
-      "type": "wokwi-potentiometer",
-      "id": "pot",
-      "top": 80,
-      "left": 300,
-      "attrs": { "value": "50%" }
-    },
-    {
-      "type": "wokwi-hc-sr04",
-      "id": "ultra",
-      "top": 200,
-      "left": 300,
-      "attrs": { "distance": "360" }
-    }
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "pot1", "top": -58.9, "left": 134.2, "attrs": {} },
+    { "type": "wokwi-hc-sr04", "id": "ultrasonic1", "top": 135.9, "left": 178.3, "attrs": {} }
   ],
   "connections": [
-    [ "pot:GND", "esp:GND.1", "black", [ "v0" ] ],
-    [ "pot:VCC", "esp:3V3", "red", [ "v0" ] ],
-    [ "pot:SIG", "esp:GPIO34", "green", [ "v0" ] ],
-    [ "ultra:VCC", "esp:5V", "red", [ "v0" ] ],
-    [ "ultra:GND", "esp:GND.2", "black", [ "v0" ] ],
-    [ "ultra:TRIG", "esp:GPIO5", "blue", [ "v0" ] ],
-    [ "ultra:ECHO", "esp:GPIO18", "yellow", [ "v0" ] ]
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "pot1:GND", "esp:GND.2", "black", [ "v0" ] ],
+    [ "pot1:VCC", "esp:3V3", "red", [ "v28.8", "h-68", "v-48", "h-124.8", "v38.4" ] ],
+    [
+      "pot1:SIG",
+      "esp:34",
+      "green",
+      [ "v38.4", "h-48.4", "v-67.2", "h-153.6", "v86.4", "h28.8" ]
+    ],
+    [ "ultrasonic1:VCC", "esp:5V", "red", [ "v67.2", "h-297.6", "v-96" ] ],
+    [ "ultrasonic1:GND", "esp:GND.1", "black", [ "v134.4", "h-346.8", "v-211.2" ] ],
+    [ "esp:5", "ultrasonic1:TRIG", "green", [ "h43.24", "v144" ] ],
+    [ "ultrasonic1:ECHO", "esp:18", "green", [ "v0" ] ]
   ],
   "dependencies": {}
 }
