@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: iot-band-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python api.py
+    envVars:
+      - key: MQTT_BROKER
+        value: 44.223.43.74
+      - key: MQTT_PORT
+        value: 1883
+      - key: MQTT_TOPIC_DATA
+        value: TEF/device023/attrs/d
+      - key: MQTT_TOPIC_ALERTS
+        value: TEF/device023/attrs/a
+      - key: PORT
+        value: 8000
