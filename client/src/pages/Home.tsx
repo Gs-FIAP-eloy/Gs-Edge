@@ -35,7 +35,7 @@ interface ModeCount {
 
 const API_URL = "https://iot-band-api.onrender.com";
 
-export default function Home() {
+export default function Home( ) {
   const [apiUrl, setApiUrl] = useState(API_URL);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -168,16 +168,21 @@ export default function Home() {
       setDistance(data.current_state.distance_cm.toString());
       setMode(data.current_state.mode);
 
-      // Converter tempo acumulado em contagem (aproximado)
+      // O backend já retorna o tempo acumulado em segundos.
       const timeAccum = data.time_accumulation;
       const total = timeAccum.WorkOFF + timeAccum.WorkON + timeAccum.Working;
       
+      // Atualizar o estado de contagem (tempo acumulado)
       if (total > 0) {
-        setModeCounts({
+        const newModeCounts = {
           WorkOFF: Math.round(timeAccum.WorkOFF),
           WorkON: Math.round(timeAccum.WorkON),
           Working: Math.round(timeAccum.Working),
-        });
+        };
+        setModeCounts(newModeCounts);
+        updateChart(newModeCounts);
+      } else {
+        updateChart({ WorkOFF: 0, WorkON: 0, Working: 0 });
       }
 
       // Atualizar alerta (mostrar na tela, substituindo o anterior)
@@ -198,7 +203,6 @@ export default function Home() {
         addLog("✗ Backend desconectado do MQTT");
       }
 
-      updateChart(modeCounts);
     } catch (error) {
       if (isConnected) {
         setIsConnected(false);
@@ -279,9 +283,6 @@ export default function Home() {
     }
   }, [currentAlert]);
 
-  useEffect(() => {
-    updateChart(modeCounts);
-  }, [modeCounts]);
 
   return (
     <div className="min-h-screen bg-background text-foreground dark flex flex-col overflow-hidden">
@@ -304,11 +305,31 @@ export default function Home() {
               <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-green-500/20 px-2 sm:px-3 py-1 sm:py-1.5">
                 <Wifi className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-500 animate-pulse flex-shrink-0" />
                 <span className="text-xs font-semibold text-green-400 hidden sm:inline">Online</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={disconnectBackend}
+                >
+                  <WifiOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-red-500/20 px-2 sm:px-3 py-1 sm:py-1.5">
-                <WifiOff className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-red-500 flex-shrink-0" />
-                <span className="text-xs font-semibold text-red-400 hidden sm:inline">Offline</span>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="url"
+                  placeholder="URL do Backend (Render)"
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  className="h-8 w-40 sm:w-64 text-xs"
+                />
+                <Button
+                  onClick={connectBackend}
+                  disabled={isConnecting}
+                  className="h-8 text-xs px-3"
+                >
+                  {isConnecting ? "Conectando..." : "Conectar"}
+                </Button>
               </div>
             )}
           </div>
@@ -316,179 +337,108 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
-        <div className="grid h-full grid-cols-1 sm:grid-cols-12 gap-1.5 sm:gap-2 p-2 sm:p-3">
-          {/* Left Column - Configuration (full on mobile, 2 cols on desktop) */}
-          <div className="col-span-1 sm:col-span-2 flex flex-col gap-1.5 sm:gap-2 min-h-0">
-            <Card className="flex flex-col gap-1.5 sm:gap-2 p-2 sm:p-3 flex-shrink-0">
-              <h2 className="text-xs sm:text-sm font-bold">Config</h2>
-
-              <div className="space-y-0.5 sm:space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">API URL</label>
-                <Input
-                  value={apiUrl}
-                  onChange={(e) => setApiUrl(e.target.value)}
-                  disabled={isConnected}
-                  className="text-xs h-7 sm:h-8"
-                  placeholder="https://iot-band-api.onrender.com"
-                />
+      <main className="flex-grow p-3 sm:p-6 overflow-y-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Coluna 1: Dados Atuais */}
+          <div className="lg:col-span-1 space-y-4">
+            <Card className="p-4 sm:p-6 space-y-4">
+              <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                Dados Atuais da Band
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg bg-muted p-3 sm:p-4">
+                  <p className="text-xs text-muted-foreground">Batimentos (BPM)</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-primary">{heartRate}</p>
+                </div>
+                <div className="rounded-lg bg-muted p-3 sm:p-4">
+                  <p className="text-xs text-muted-foreground">Distância (cm)</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-primary">{distance}</p>
+                </div>
               </div>
-
-              <div className="flex gap-2 pt-0.5 sm:pt-1">
-                {!isConnected ? (
-                  <Button
-                    onClick={connectBackend}
-                    disabled={isConnecting}
-                    className="flex-1 h-7 sm:h-8 text-xs bg-accent hover:bg-accent/90"
-                  >
-                    {isConnecting ? "..." : "Conectar"}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={disconnectBackend}
-                    variant="destructive"
-                    className="flex-1 h-7 sm:h-8 text-xs"
-                  >
-                    Desconectar
-                  </Button>
-                )}
+              <div className="rounded-lg bg-primary/10 border border-primary/30 p-3 sm:p-4 text-center">
+                <p className="text-sm text-primary-foreground/70">Modo Atual</p>
+                <p className="text-3xl sm:text-4xl font-extrabold text-primary">
+                  {mode}
+                </p>
               </div>
-
-              <Button
-                onClick={resetData}
-                disabled={!isConnected}
-                variant="outline"
-                className="w-full h-7 sm:h-8 text-xs"
-              >
-                Reset
+              <Button onClick={resetData} variant="outline" className="w-full">
+                Resetar Acumulação de Tempo
               </Button>
             </Card>
 
             {/* Logs */}
-            <Card className="flex flex-col gap-1.5 sm:gap-2 p-2 sm:p-3 flex-1 min-h-0 overflow-hidden">
-              <div className="flex items-center justify-between flex-shrink-0">
-                <h2 className="text-xs sm:text-sm font-bold">Log</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowLogs(!showLogs)}
-                  className="h-5 sm:h-6 px-1.5 sm:px-2 text-xs"
-                >
-                  <ChevronDown className={`h-3 w-3 transition-transform ${showLogs ? "rotate-180" : ""}`} />
-                </Button>
-              </div>
-
+            <Card className="p-4 sm:p-6 space-y-4">
+              <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 cursor-pointer" onClick={() => setShowLogs(!showLogs)}>
+                <Zap className="h-5 w-5 text-yellow-500" />
+                Logs de Eventos ({logs.length})
+                <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? "rotate-180" : ""}`} />
+              </h2>
               {showLogs && (
-                <div className="flex-1 overflow-y-auto rounded-lg bg-muted p-1.5 sm:p-2 font-mono text-xs min-h-0 space-y-0.5">
-                  {logs.length === 0 ? (
-                    <p className="text-muted-foreground text-xs">Aguardando...</p>
-                  ) : (
-                    logs.map((log, i) => (
-                      <div key={i} className="text-muted-foreground text-xs line-clamp-1">
-                        {log}
-                      </div>
-                    ))
-                  )}
+                <div className="h-40 overflow-y-auto bg-black p-2 rounded-lg text-xs font-mono text-green-400">
+                  {logs.map((log, index) => (
+                    <p key={index} className="whitespace-pre-wrap">{log}</p>
+                  ))}
                 </div>
               )}
             </Card>
           </div>
 
-          {/* Center Column - Chart (full on mobile, 5 cols on desktop) */}
-          <div className="col-span-1 sm:col-span-5 flex flex-col gap-1.5 sm:gap-2 min-h-0">
-            <Card className="flex flex-col items-center justify-center p-2 sm:p-3 flex-1 min-h-0">
-              <h2 className="text-xs sm:text-sm font-bold flex-shrink-0">Distribuição</h2>
-              <div className="flex-1 flex items-center justify-center min-h-0 w-full">
-                <canvas
-                  ref={canvasRef}
-                  width={160}
-                  height={160}
-                  className="sm:w-auto sm:h-auto max-w-full max-h-full"
-                  style={{ width: "160px", height: "160px" }}
-                />
-              </div>
-              <div className="mt-1.5 sm:mt-2 flex gap-2 sm:gap-3 text-xs flex-shrink-0 flex-wrap justify-center">
-                <div className="flex items-center gap-1">
-                  <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full flex-shrink-0" style={{ backgroundColor: "#ef4444" }} />
-                  <span className="text-xs">OFF: {modeCounts.WorkOFF}s</span>
+          {/* Coluna 2: Gráfico de Tempo Acumulado */}
+          <div className="lg:col-span-2 space-y-4">
+            <Card className="p-4 sm:p-6 space-y-4">
+              <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                Tempo Acumulado por Modo
+              </h2>
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="w-full md:w-1/2 flex justify-center">
+                  <div className="relative w-64 h-64 sm:w-80 sm:h-80">
+                    <canvas ref={canvasRef} width={320} height={320} className="absolute top-0 left-0"></canvas>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <p className="text-xs text-muted-foreground">Total Acumulado</p>
+                      <p className="text-2xl font-bold">
+                        {modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working}s
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full flex-shrink-0" style={{ backgroundColor: "#22c55e" }} />
-                  <span className="text-xs">ON: {modeCounts.WorkON}s</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full flex-shrink-0" style={{ backgroundColor: "#a855f7" }} />
-                  <span className="text-xs">WRK: {modeCounts.Working}s</span>
+                <div className="w-full md:w-1/2 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-red-500 flex-shrink-0"></div>
+                    <p className="text-sm font-medium">WorkOFF (Sem Batimentos)</p>
+                    <p className="ml-auto text-sm font-bold">{modeCounts.WorkOFF}s</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-green-500 flex-shrink-0"></div>
+                    <p className="text-sm font-medium">Working (Bat. + Perto)</p>
+                    <p className="ml-auto text-sm font-bold">{modeCounts.Working}s</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-purple-500 flex-shrink-0"></div>
+                    <p className="text-sm font-medium">WorkON (Bat. + Longe)</p>
+                    <p className="ml-auto text-sm font-bold">{modeCounts.WorkON}s</p>
+                  </div>
                 </div>
               </div>
             </Card>
 
-            {/* Indicators */}
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 flex-shrink-0">
-              <Card className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-1.5 sm:p-2">
-                <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent flex-shrink-0" />
-                <p className="text-xs text-muted-foreground">HR</p>
-                <p className="text-lg sm:text-xl font-bold">{heartRate}</p>
-                <p className="text-xs text-muted-foreground">bpm</p>
-              </Card>
-
-              <Card className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-1.5 sm:p-2">
-                <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent flex-shrink-0" />
-                <p className="text-xs text-muted-foreground">Dist</p>
-                <p className="text-lg sm:text-xl font-bold">{distance}</p>
-                <p className="text-xs text-muted-foreground">cm</p>
-              </Card>
-
-              <Card className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-1.5 sm:p-2">
-                <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent flex-shrink-0" />
-                <p className="text-xs text-muted-foreground">Modo</p>
-                <p className="text-sm sm:text-base font-bold text-center line-clamp-1">{mode}</p>
-              </Card>
-            </div>
-          </div>
-
-          {/* Right Column - Stats (full on mobile, 5 cols on desktop) */}
-          <div className="col-span-1 sm:col-span-5 flex flex-col gap-1.5 sm:gap-2 min-h-0">
-            <Card className="flex flex-col gap-1.5 sm:gap-2 p-2 sm:p-3 flex-1 min-h-0 overflow-y-auto">
-              <h2 className="text-xs sm:text-sm font-bold flex-shrink-0">Estatísticas</h2>
-
-              <div className="space-y-1 sm:space-y-2 flex-1 min-h-0">
-                <div className="rounded-lg bg-muted p-1.5 sm:p-2 flex-shrink-0">
-                  <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="text-xl sm:text-2xl font-bold">
-                    {modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working}s
-                  </p>
-                </div>
-
-                <div className="rounded-lg bg-muted p-1.5 sm:p-2 flex-shrink-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-xs text-muted-foreground">WorkOFF</p>
-                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.WorkOFF}s</p>
-                    </div>
-                    <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
-                      <div
-                        className="h-full rounded-full bg-accent transition-all"
-                        style={{
-                          width:
-                            modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working === 0
-                              ? "0%"
-                              : `${(modeCounts.WorkOFF / (modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
+            {/* Alertas e Detalhes */}
+            <Card className="p-4 sm:p-6 space-y-4">
+              <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                Alertas e Detalhes
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-lg bg-muted p-1.5 sm:p-2 flex-shrink-0">
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">WorkON</p>
-                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.WorkON}s</p>
+                      <p className="text-lg sm:text-xl font-bold text-purple-500">{modeCounts.WorkON}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
-                        className="h-full rounded-full bg-accent transition-all"
+                        className="h-full rounded-full bg-purple-500 transition-all"
                         style={{
                           width:
                             modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working === 0
@@ -504,11 +454,11 @@ export default function Home() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">Working</p>
-                      <p className="text-lg sm:text-xl font-bold text-accent">{modeCounts.Working}s</p>
+                      <p className="text-lg sm:text-xl font-bold text-green-500">{modeCounts.Working}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
-                        className="h-full rounded-full bg-accent transition-all"
+                        className="h-full rounded-full bg-green-500 transition-all"
                         style={{
                           width:
                             modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working === 0
@@ -521,8 +471,8 @@ export default function Home() {
                 </div>
 
                 {currentAlert && (
-                  <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-1.5 sm:p-2 flex-shrink-0">
-                    <p className="text-xs font-bold text-red-500 mb-1">🚨 {currentAlert.type}</p>
+                  <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-1.5 sm:p-2 flex-shrink-0 sm:col-span-2">
+                    <p className="text-xs font-bold text-red-500 mb-1">🚨 {currentAlert.type.toUpperCase().replace('_', ' ')}</p>
                     <p className="text-xs text-red-400">
                       {currentAlert.message}
                     </p>
