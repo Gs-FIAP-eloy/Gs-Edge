@@ -311,7 +311,6 @@ class BandDataProcessor:
         """Get the current state of the band."""
         with self.lock:
             # Antes de retornar, garante que o tempo do estado atual seja contabilizado
-            # Isso é crucial para que o dashboard mostre o tempo acumulado em tempo real
             self._update_time_accumulation() 
             
             return {
@@ -337,8 +336,9 @@ class BandDataProcessor:
             }
 
     def reset_accumulation(self):
-        """Reset time accumulation counters."""
+        """Reset time accumulation counters and set current state to WorkOFF."""
         with self.lock:
+            # 1. Resetar a acumulação de tempo
             self.time_accumulation = {
                 "WorkOFF": 0,
                 "WorkON": 0,
@@ -347,7 +347,18 @@ class BandDataProcessor:
             self.alerts = []
             self.alert_history = []
             self.state_start_time = datetime.utcnow()
-            print("🔄 Time accumulation reset")
+            
+            # 2. Resetar o estado atual para WorkOFF
+            self.current_state = {
+                "device": "eloyband_01",
+                "mode": "WorkOFF",
+                "heart_rate": 0,
+                "distance_cm": 0,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+            self.last_state = "WorkOFF"
+            
+            print("🔄 Data and state reset to WorkOFF")
 
     def connect(self):
         """Connect to the MQTT broker."""
