@@ -55,7 +55,7 @@ app = FastAPI(
 # Add CORS middleware to allow requests from the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domain
+    allow_origins=["https://eloydashboard.vercel.app"],  # Frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
