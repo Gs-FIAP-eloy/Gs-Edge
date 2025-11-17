@@ -290,7 +290,7 @@ export default function Home(  ) {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <div className="rounded-lg bg-accent p-1 sm:p-1.5 flex-shrink-0">
-              <Radio className="h-4 w-4 sm:h-5 sm:w-5 text-accent-foreground" />
+              <img src="/logo.svg" alt="Eloy logo" className="h-4 w-4 sm:h-5 sm:w-5 object-contain" />
             </div>
             <div className="min-w-0">
               <h1 className="text-base sm:text-xl font-bold truncate">EloyBand</h1>
