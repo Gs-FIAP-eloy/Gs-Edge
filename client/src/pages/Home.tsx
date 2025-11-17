@@ -405,17 +405,17 @@ export default function Home(  ) {
                 <div className="w-full md:w-1/2 space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-red-500 flex-shrink-0"></div>
-                    <p className="text-sm font-medium">WorkOFF (Sem Batimentos)</p>
+                    <p title="Band não detecta batimentos" className="text-sm font-medium">WorkOFF</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkOFF}s</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-green-500 flex-shrink-0"></div>
-                    <p className="text-sm font-medium">WorkON (Bat. + Longe)</p>
+                    <p title="Band detecta batimentos, mas está longe do workspace" className="text-sm font-medium">WorkON</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkON}s</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-purple-500 flex-shrink-0"></div>
-                    <p className="text-sm font-medium">Working (Bat. + Perto)</p>
+                    <p title="Band detecta batimentos e está perto do workspace" className="text-sm font-medium">Working</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.Working}s</p>
                   </div>
                 </div>
