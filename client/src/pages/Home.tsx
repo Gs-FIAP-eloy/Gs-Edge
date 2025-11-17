@@ -1,3 +1,5 @@
+// Conteúdo completo do arquivo client/src/pages/Home.tsx
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +37,7 @@ interface ModeCount {
 
 const API_URL = "https://iot-band-api.onrender.com";
 
-export default function Home( ) {
+export default function Home(  ) {
   const [apiUrl, setApiUrl] = useState(API_URL);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -165,7 +167,7 @@ export default function Home( ) {
 
       // Atualizar estado
       setHeartRate(data.current_state.heart_rate.toString());
-      setDistance(data.current_state.distance_cm.toString());
+      setDistance(Math.round(data.current_state.distance_cm).toString()); // CORREÇÃO: Arredonda a distância
       setMode(data.current_state.mode);
 
       // O backend já retorna o tempo acumulado em segundos.
@@ -228,7 +230,7 @@ export default function Home( ) {
 
       // Iniciar polling
       fetchBandData();
-      pollingIntervalRef.current = setInterval(fetchBandData, 2000);
+      pollingIntervalRef.current = setInterval(fetchBandData, 1000); // CORREÇÃO: Reduz o intervalo para 1s
     } catch (error) {
       addLog(`✗ Erro ao conectar: ${error}`);
       toast.error(`Erro ao conectar: ${error}`);
@@ -304,16 +306,18 @@ export default function Home( ) {
             {isConnected ? (
               <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-green-500/20 px-2 sm:px-3 py-1 sm:py-1.5">
                 <Wifi className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-500 animate-pulse flex-shrink-0" />
-                <span className="text-xs font-semibold text-green-400 hidden sm:inline">Online</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  onClick={disconnectBackend}
-                >
-                  <WifiOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                </Button>
+                <span className="text-xs sm:text-sm font-medium text-green-500">Conectado</span>
               </div>
+            ) : (
+              <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-red-500/20 px-2 sm:px-3 py-1 sm:py-1.5">
+                <WifiOff className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-red-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium text-red-500">Desconectado</span>
+              </div>
+            )}
+            {isConnected ? (
+              <Button onClick={disconnectBackend} variant="destructive" size="sm" className="h-8">
+                Desconectar
+              </Button>
             ) : (
               <div className="flex items-center gap-2">
                 <Input
@@ -321,13 +325,9 @@ export default function Home( ) {
                   placeholder="URL do Backend (Render)"
                   value={apiUrl}
                   onChange={(e) => setApiUrl(e.target.value)}
-                  className="h-8 w-40 sm:w-64 text-xs"
+                  className="w-40 sm:w-64 h-8 text-xs"
                 />
-                <Button
-                  onClick={connectBackend}
-                  disabled={isConnecting}
-                  className="h-8 text-xs px-3"
-                >
+                <Button onClick={connectBackend} disabled={isConnecting} size="sm" className="h-8">
                   {isConnecting ? "Conectando..." : "Conectar"}
                 </Button>
               </div>
@@ -337,13 +337,27 @@ export default function Home( ) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow p-3 sm:p-6 overflow-y-auto">
+      <main className="flex-grow p-4 sm:p-6">
+        {currentAlert && (
+          <div className="fixed top-4 right-4 z-50 max-w-sm w-full">
+            <Card className="p-4 bg-red-600/20 border-red-600 shadow-2xl">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-red-400">ALERTA: {currentAlert.type.toUpperCase().replace('_', ' ')}</p>
+                  <p className="text-xs text-red-300 mt-1">{currentAlert.message}</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Coluna 1: Dados Atuais */}
-          <div className="lg:col-span-1 space-y-4">
+          {/* Coluna 1: Dados Atuais e Controles */}
+          <div className="space-y-4">
             <Card className="p-4 sm:p-6 space-y-4">
               <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
+                <Activity className="h-5 w-5 text-blue-500" />
                 Dados Atuais da Band
               </h2>
               <div className="grid grid-cols-2 gap-4">
@@ -473,7 +487,7 @@ export default function Home( ) {
                 {currentAlert && (
                   <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-1.5 sm:p-2 flex-shrink-0 sm:col-span-2">
                     <p className="text-xs font-bold text-red-500 mb-1">🚨 {currentAlert.type.toUpperCase().replace('_', ' ')}</p>
-                    <p className="text-xs text-red-400">
+                    <p className="text-xs text-red-300">
                       {currentAlert.message}
                     </p>
                   </div>
