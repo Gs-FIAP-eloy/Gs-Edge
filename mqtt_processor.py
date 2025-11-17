@@ -279,9 +279,11 @@ class BandDataProcessor:
 
     def _check_alerts(self):
         """Check for alert conditions based on accumulated time."""
-        self.alerts = []
         
-        # Alert 1: Overworking
+        # Cria uma lista temporária para os alertas ativos
+        active_alerts = []
+        
+        # --- Alert 1: Overworking ---
         if self.time_accumulation["Working"] > self.OVERWORKING_THRESHOLD:
             alert = {
                 "type": "overworking",
@@ -289,13 +291,17 @@ class BandDataProcessor:
                 "timestamp": datetime.utcnow().isoformat(),
                 "severity": "high",
             }
-            self.alerts.append(alert)
-            self.alert_history.append(alert)
-            print(f"🚨 {alert['message']}")
+            active_alerts.append(alert)
+            # Adiciona ao histórico apenas se for um novo alerta (simplificação)
+            if not any(a['type'] == 'overworking' for a in self.alerts):
+                self.alert_history.append(alert)
+                print(f"🚨 {alert['message']}")
         
-        # Alert 2: Low Productivity
+        # --- Alert 2: Low Productivity ---
+        # A condição é: WorkON time > LOW_PRODUCTIVITY_RATIO * Working time
         if self.time_accumulation["Working"] > 0:
             ratio = self.time_accumulation["WorkON"] / self.time_accumulation["Working"]
+            
             if ratio > self.LOW_PRODUCTIVITY_RATIO:
                 alert = {
                     "type": "low_productivity",
@@ -303,9 +309,13 @@ class BandDataProcessor:
                     "timestamp": datetime.utcnow().isoformat(),
                     "severity": "medium",
                 }
-                self.alerts.append(alert)
-                self.alert_history.append(alert)
-                print(f"🚨 {alert['message']}")
+                active_alerts.append(alert)
+                if not any(a['type'] == 'low_productivity' for a in self.alerts):
+                    self.alert_history.append(alert)
+                    print(f"🚨 {alert['message']}")
+        
+        # Atualiza a lista de alertas ativos. Se a condição não for mais atendida, o alerta some.
+        self.alerts = active_alerts
 
     def get_current_state(self) -> Dict[str, Any]:
         """Get the current state of the band."""
