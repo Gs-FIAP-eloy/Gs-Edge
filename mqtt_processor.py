@@ -176,22 +176,30 @@ class BandDataProcessor:
         """Process incoming data from Wokwi format (separate topics for distance and heart rate)."""
         with self.lock:
             try:
-                # Parse the value as a number
+                # O Wokwi envia a distância em metros (m), mas o estado interno usa cm.
+                # O payload do Wokwi é um valor numérico.
                 numeric_value = float(value.strip())
+                
+                # Flag para saber se um valor foi atualizado
+                updated = False
                 
                 # Determine if it's distance (d) or heart rate (b)
                 if topic == self.topic_distance or topic.endswith('/d'):
-                    self.wokwi_data["distance_cm"] = numeric_value
-                    print(f"✅ [Wokwi] Distance received: {numeric_value}cm")
+                    # Converter metros para centímetros (1.85m -> 185cm)
+                    self.wokwi_data["distance_cm"] = numeric_value * 100
+                    print(f"✅ [Wokwi] Distance received: {numeric_value}m -> {self.wokwi_data['distance_cm']:.0f}cm")
+                    updated = True
                 elif topic == self.topic_heartrate or topic.endswith('/b'):
                     self.wokwi_data["heart_rate"] = numeric_value
-                    print(f"✅ [Wokwi] Heart rate received: {numeric_value}bpm")
+                    print(f"✅ [Wokwi] Heart rate received: {numeric_value:.0f}bpm")
+                    updated = True
                 else:
                     print(f"⚠️  Unknown Wokwi topic: {topic}")
                     return
                 
-                # Update current state with Wokwi data
-                self._update_state_from_wokwi()
+                # Atualizar o estado e a lógica de acumulação/alerta após receber qualquer dado
+                if updated:
+                    self._update_state_from_wokwi()
                 
             except ValueError as e:
                 print(f"⚠️  Could not parse Wokwi value: {value} - Error: {e}")
@@ -202,13 +210,20 @@ class BandDataProcessor:
         distance = self.wokwi_data["distance_cm"]
         
         # Calculate mode based on heart rate and distance
+        # Distância limite de 50cm (0.5m)
+        DISTANCE_THRESHOLD_CM = 50 
+        
         if heart_rate == 0:
+            # WorkOFF: não detecta batimentos, assume q o funcionario n esta no expediente, ou não esta trabalhando
             mode = "WorkOFF"
-        elif heart_rate > 0 and distance > 50:
+        elif heart_rate > 0 and distance > DISTANCE_THRESHOLD_CM:
+            # WorkON: detecta batimentos, assume q o funcionario esta no expediente, mas longe do workspace
             mode = "WorkON"
-        elif heart_rate > 0 and distance <= 50:
+        elif heart_rate > 0 and distance <= DISTANCE_THRESHOLD_CM:
+            # Working: detecta batimentos, e esta em uma distancia curta do computador (<= 50cm)
             mode = "Working"
         else:
+            # Fallback, deve ser WorkOFF se heart_rate for 0, mas para segurança
             mode = "WorkOFF"
         
         # Update current state
@@ -299,7 +314,7 @@ class BandDataProcessor:
                 "percentages": {
                     "WorkOFF": (self.time_accumulation["WorkOFF"] / total_time * 100) if total_time > 0 else 0,
                     "WorkON": (self.time_accumulation["WorkON"] / total_time * 100) if total_time > 0 else 0,
-                "Working": (self.time_accumulation["Working"] / total_time * 100) if total_time > 0 else 0,
+                    "Working": (self.time_accumulation["Working"] / total_time * 100) if total_time > 0 else 0,
                 },
                 "alert_history": self.alert_history,
             }
