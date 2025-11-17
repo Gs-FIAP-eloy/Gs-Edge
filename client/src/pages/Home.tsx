@@ -294,7 +294,6 @@ export default function Home(  ) {
             </div>
             <div className="min-w-0">
               <h1 className="text-base sm:text-xl font-bold truncate">EloyBand</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">Monitor REST API</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -403,17 +402,17 @@ export default function Home(  ) {
                 <div className="w-full md:w-1/2 space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-red-500 flex-shrink-0"></div>
-                    <p className="text-sm font-medium">WorkOFF (Sem Batimentos)</p>
+                    <p title="Sem batimentos" className="text-sm font-medium">WorkOFF</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkOFF}s</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-blue-500 flex-shrink-0"></div>
-                    <p className="text-sm font-medium">WorkON (Bat. + Longe)</p>
+                    <p title="Batimentos cardiacos presentes e distância longe" className="text-sm font-medium">WorkON</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkON}s</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-purple-500 flex-shrink-0"></div>
-                    <p className="text-sm font-medium">Working (Bat. + Perto)</p>
+                    <p title="Batimentos cardiacos presentes e distância perto" className="text-sm font-medium">Working</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.Working}s</p>
                   </div>
                 </div>
