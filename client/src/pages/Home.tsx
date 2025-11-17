@@ -187,12 +187,8 @@ export default function Home(  ) {
         updateChart({ WorkOFF: 0, WorkON: 0, Working: 0 });
       }
 
-      // Atualizar alerta (mostrar na tela, substituindo o anterior)
-      if (data.alerts.length > 0) {
-        setCurrentAlert(data.alerts[0]);
-      } else {
-        setCurrentAlert(null);
-      }
+      // O frontend agora só exibe os alertas na seção "Alertas e Detalhes"
+      // A lógica de alerta flutuante e seu timeout foram removidos.
 
       // Atualizar status de conexão (apenas quando há mudança)
       if (!previousConnectionStateRef.current && data.is_connected) {
@@ -275,20 +271,15 @@ export default function Home(  ) {
     };
   }, []);
 
-  useEffect(() => {
-    // Fechar alerta após 10 segundos se não houver novo
-    if (currentAlert) {
-      const timer = setTimeout(() => {
-        setCurrentAlert(null);
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentAlert]);
+  // Lógica de alerta flutuante removida a pedido do usuário.
+  // Os alertas agora são exibidos apenas na seção "Alertas e Detalhes" (data.alerts)
 
 
   return (
     <div className="min-h-screen bg-background text-foreground dark flex flex-col overflow-hidden">
       <Toaster position="top-right" />
+
+      {/* Alerta flutuante removido a pedido do usuário. Os alertas agora são exibidos apenas na seção "Alertas e Detalhes" */}
 
       {/* Header */}
       <header className="border-b border-border bg-card shadow-lg flex-shrink-0 px-3 sm:px-6 py-2 sm:py-3">
@@ -306,18 +297,16 @@ export default function Home(  ) {
             {isConnected ? (
               <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-green-500/20 px-2 sm:px-3 py-1 sm:py-1.5">
                 <Wifi className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-500 animate-pulse flex-shrink-0" />
-                <span className="text-xs sm:text-sm font-medium text-green-500">Conectado</span>
+                <span className="text-xs font-semibold text-green-400 hidden sm:inline">Online</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={disconnectBackend}
+                >
+                  <WifiOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                </Button>
               </div>
-            ) : (
-              <div className="flex items-center gap-1 sm:gap-2 rounded-lg bg-red-500/20 px-2 sm:px-3 py-1 sm:py-1.5">
-                <WifiOff className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-red-500 flex-shrink-0" />
-                <span className="text-xs sm:text-sm font-medium text-red-500">Desconectado</span>
-              </div>
-            )}
-            {isConnected ? (
-              <Button onClick={disconnectBackend} variant="destructive" size="sm" className="h-8">
-                Desconectar
-              </Button>
             ) : (
               <div className="flex items-center gap-2">
                 <Input
@@ -325,9 +314,13 @@ export default function Home(  ) {
                   placeholder="URL do Backend (Render)"
                   value={apiUrl}
                   onChange={(e) => setApiUrl(e.target.value)}
-                  className="w-40 sm:w-64 h-8 text-xs"
+                  className="h-8 w-40 sm:w-64 text-xs"
                 />
-                <Button onClick={connectBackend} disabled={isConnecting} size="sm" className="h-8">
+                <Button
+                  onClick={connectBackend}
+                  disabled={isConnecting}
+                  className="h-8 text-xs px-3"
+                >
                   {isConnecting ? "Conectando..." : "Conectar"}
                 </Button>
               </div>
@@ -338,19 +331,7 @@ export default function Home(  ) {
 
       {/* Main Content */}
       <main className="flex-grow p-4 sm:p-6">
-        {currentAlert && (
-          <div className="fixed top-4 right-4 z-50 max-w-sm w-full">
-            <Card className="p-4 bg-red-600/20 border-red-600 shadow-2xl">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-bold text-red-400">ALERTA: {currentAlert.type.toUpperCase().replace('_', ' ')}</p>
-                  <p className="text-xs text-red-300 mt-1">{currentAlert.message}</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
+        {/* Alerta flutuante removido a pedido do usuário. Os alertas agora são exibidos apenas na seção "Alertas e Detalhes" */}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Coluna 1: Dados Atuais e Controles */}
@@ -484,14 +465,15 @@ export default function Home(  ) {
                   </div>
                 </div>
 
-                {currentAlert && (
-                  <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-1.5 sm:p-2 flex-shrink-0 sm:col-span-2">
-                    <p className="text-xs font-bold text-red-500 mb-1">🚨 {currentAlert.type.toUpperCase().replace('_', ' ')}</p>
+                {/* Renderiza os alertas ativos */}
+                {data.alerts.map((alert, index) => (
+                  <div key={index} className="rounded-lg bg-red-500/10 border border-red-500/30 p-1.5 sm:p-2 flex-shrink-0 sm:col-span-2">
+                    <p className="text-xs font-bold text-red-500 mb-1">🚨 {alert.type.toUpperCase().replace('_', ' ')}</p>
                     <p className="text-xs text-red-300">
-                      {currentAlert.message}
+                      {alert.message}
                     </p>
                   </div>
-                )}
+                ))}
               </div>
             </Card>
           </div>
