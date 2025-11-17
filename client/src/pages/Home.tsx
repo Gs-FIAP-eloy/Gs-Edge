@@ -411,13 +411,13 @@ export default function Home( ) {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-green-500 flex-shrink-0"></div>
-                    <p className="text-sm font-medium">Working (Bat. + Perto)</p>
-                    <p className="ml-auto text-sm font-bold">{modeCounts.Working}s</p>
+                    <p className="text-sm font-medium">WorkON (Bat. + Longe)</p>
+                    <p className="ml-auto text-sm font-bold">{modeCounts.WorkON}s</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-purple-500 flex-shrink-0"></div>
-                    <p className="text-sm font-medium">WorkON (Bat. + Longe)</p>
-                    <p className="ml-auto text-sm font-bold">{modeCounts.WorkON}s</p>
+                    <p className="text-sm font-medium">Working (Bat. + Perto)</p>
+                    <p className="ml-auto text-sm font-bold">{modeCounts.Working}s</p>
                   </div>
                 </div>
               </div>
@@ -434,11 +434,11 @@ export default function Home( ) {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">WorkON</p>
-                      <p className="text-lg sm:text-xl font-bold text-purple-500">{modeCounts.WorkON}s</p>
+                      <p className="text-lg sm:text-xl font-bold text-green-500">{modeCounts.WorkON}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
-                        className="h-full rounded-full bg-purple-500 transition-all"
+                        className="h-full rounded-full bg-green-500 transition-all"
                         style={{
                           width:
                             modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working === 0
@@ -454,11 +454,11 @@ export default function Home( ) {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">Working</p>
-                      <p className="text-lg sm:text-xl font-bold text-green-500">{modeCounts.Working}s</p>
+                      <p className="text-lg sm:text-xl font-bold text-purple-500">{modeCounts.Working}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
-                        className="h-full rounded-full bg-green-500 transition-all"
+                        className="h-full rounded-full bg-purple-500 transition-all"
                         style={{
                           width:
                             modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working === 0
