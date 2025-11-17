@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Wifi, WifiOff, Activity, Zap, ChevronDown } from "lucide-react";
-import EloyLogo from "../../../public/eloy_logo.svg"; // Importa a logo SVG (assumindo que o bundler suporta)
+import { AlertCircle, Wifi, WifiOff, Activity, Zap, Radio, ChevronDown } from "lucide-react";
 import { Toaster, toast } from "sonner";
 
 interface BandState {
@@ -87,7 +86,7 @@ export default function Home(  ) {
 
     const colors = [
       "#ef4444",
-      "#3b82f6", // Azul (blue-500) para WorkON
+      "#22c55e",
       "#a855f7",
     ];
     const getContrastColor = (hex: string) => {
@@ -290,8 +289,8 @@ export default function Home(  ) {
       <header className="border-b border-border bg-[#0b0b0b] shadow-lg flex-shrink-0 px-3 sm:px-6 py-2 sm:py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <div className="p-1 sm:p-1.5 flex-shrink-0">
-              <img src={EloyLogo} alt="EloyBand Logo" className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="rounded-lg bg-accent p-1 sm:p-1.5 flex-shrink-0">
+              <img src="/logo.svg" alt="Eloy logo" className="h-4 w-4 sm:h-5 sm:w-5 object-contain" />
             </div>
             <div className="min-w-0">
               <h1 className="text-base sm:text-xl font-bold truncate">EloyBand</h1>
@@ -408,7 +407,7 @@ export default function Home(  ) {
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkOFF}s</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-blue-500 flex-shrink-0"></div>
+                    <div className="h-3 w-3 rounded-full bg-green-500 flex-shrink-0"></div>
                     <p className="text-sm font-medium">WorkON (Bat. + Longe)</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkON}s</p>
                   </div>
@@ -432,11 +431,11 @@ export default function Home(  ) {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">WorkON</p>
-                      <p className="text-lg sm:text-xl font-bold text-blue-500">{modeCounts.WorkON}s</p>
+                      <p className="text-lg sm:text-xl font-bold text-green-500">{modeCounts.WorkON}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
-                        className="h-full rounded-full bg-blue-500 transition-all"
+                        className="h-full rounded-full bg-green-500 transition-all"
                         style={{
                           width:
                             modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working === 0
