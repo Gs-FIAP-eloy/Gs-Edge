@@ -1,3 +1,5 @@
+# Conteúdo completo do arquivo mqtt_processor.py
+
 """
 MQTT Data Processor for IoT Band
 Connects to MQTT broker, processes band data, tracks time in states, and generates alerts.
@@ -254,15 +256,26 @@ class BandDataProcessor:
         current_time = datetime.utcnow()
         time_delta = (current_time - self.state_start_time).total_seconds()
         
-        # Accumulate time for the last state
-        if self.last_state in self.time_accumulation:
-            self.time_accumulation[self.last_state] += time_delta
+        # Accumulate time for the *current* state before checking for transition
+        current_mode = self.current_state["mode"]
         
-        # If state changed, reset the start time
-        if self.current_state["mode"] != self.last_state:
-            self.last_state = self.current_state["mode"]
+        # Se o modo mudou, acumula o tempo do modo anterior e inicia o novo
+        if current_mode != self.last_state:
+            # 1. Acumula o tempo do modo anterior (last_state)
+            if self.last_state in self.time_accumulation:
+                self.time_accumulation[self.last_state] += time_delta
+            
+            # 2. Inicia o novo estado
+            self.last_state = current_mode
             self.state_start_time = current_time
             print(f"🔄 State transition to: {self.last_state}")
+        else:
+            # Se o modo não mudou, acumula o tempo no modo atual (last_state/current_mode)
+            if current_mode in self.time_accumulation:
+                self.time_accumulation[current_mode] += time_delta
+            
+            # Reinicia o state_start_time para o próximo cálculo
+            self.state_start_time = current_time
 
     def _check_alerts(self):
         """Check for alert conditions based on accumulated time."""
@@ -297,6 +310,10 @@ class BandDataProcessor:
     def get_current_state(self) -> Dict[str, Any]:
         """Get the current state of the band."""
         with self.lock:
+            # Antes de retornar, garante que o tempo do estado atual seja contabilizado
+            # Isso é crucial para que o dashboard mostre o tempo acumulado em tempo real
+            self._update_time_accumulation() 
+            
             return {
                 "current_state": self.current_state,
                 "time_accumulation": self.time_accumulation,
