@@ -87,7 +87,7 @@ export default function Home(  ) {
 
     const colors = [
       "#ef4444",
-      "#22c55e",
+      "#3b82f6", // Azul (blue-500) para WorkON
       "#a855f7",
     ];
     const getContrastColor = (hex: string) => {
@@ -408,7 +408,7 @@ export default function Home(  ) {
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkOFF}s</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-green-500 flex-shrink-0"></div>
+                    <div className="h-3 w-3 rounded-full bg-blue-500 flex-shrink-0"></div>
                     <p className="text-sm font-medium">WorkON (Bat. + Longe)</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkON}s</p>
                   </div>
@@ -432,11 +432,11 @@ export default function Home(  ) {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-muted-foreground">WorkON</p>
-                      <p className="text-lg sm:text-xl font-bold text-green-500">{modeCounts.WorkON}s</p>
+                      <p className="text-lg sm:text-xl font-bold text-blue-500">{modeCounts.WorkON}s</p>
                     </div>
                     <div className="w-12 sm:w-16 h-5 sm:h-6 rounded-full bg-background flex-shrink-0">
                       <div
-                        className="h-full rounded-full bg-green-500 transition-all"
+                        className="h-full rounded-full bg-blue-500 transition-all"
                         style={{
                           width:
                             modeCounts.WorkOFF + modeCounts.WorkON + modeCounts.Working === 0
