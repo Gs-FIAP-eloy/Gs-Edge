@@ -362,7 +362,7 @@ export default function Home(  ) {
                 </p>
               </div>
               <Button onClick={resetData} variant="outline" className="w-full">
-                Resetar Acumulação de Tempo
+                Iniciar Expediente
               </Button>
             </Card>
 
