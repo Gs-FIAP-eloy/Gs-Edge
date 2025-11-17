@@ -51,7 +51,8 @@ export default function Home(  ) {
   });
   const [logs, setLogs] = useState<string[]>([]);
   const [showLogs, setShowLogs] = useState(false);
-  const [currentAlert, setCurrentAlert] = useState<any>(null);
+  const [currentAlert, setCurrentAlert] = useState<any>(null); // Mantido para compatibilidade, mas não será usado para o alerta flutuante
+  const [alerts, setAlerts] = useState<any[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const previousConnectionStateRef = useRef<boolean>(false);
@@ -189,6 +190,8 @@ export default function Home(  ) {
 
       // O frontend agora só exibe os alertas na seção "Alertas e Detalhes"
       // A lógica de alerta flutuante e seu timeout foram removidos.
+      // Atualizar o estado de alertas para renderização na seção "Alertas e Detalhes"
+      setAlerts(data.alerts);
 
       // Atualizar status de conexão (apenas quando há mudança)
       if (!previousConnectionStateRef.current && data.is_connected) {
@@ -254,7 +257,7 @@ export default function Home(  ) {
         throw new Error("Erro ao resetar");
       }
       setModeCounts({ WorkOFF: 0, WorkON: 0, Working: 0 });
-      setCurrentAlert(null);
+      setAlerts([]); // Limpa os alertas no frontend
       addLog("🔄 Dados resetados");
       toast.success("Dados resetados com sucesso!");
     } catch (error) {
@@ -272,7 +275,7 @@ export default function Home(  ) {
   }, []);
 
   // Lógica de alerta flutuante removida a pedido do usuário.
-  // Os alertas agora são exibidos apenas na seção "Alertas e Detalhes" (data.alerts)
+  // Os alertas agora são exibidos apenas na seção "Alertas e Detalhes" (alerts state)
 
 
   return (
@@ -280,6 +283,7 @@ export default function Home(  ) {
       <Toaster position="top-right" />
 
       {/* Alerta flutuante removido a pedido do usuário. Os alertas agora são exibidos apenas na seção "Alertas e Detalhes" */}
+      {/* O estado 'alerts' é usado para renderizar na seção 'Alertas e Detalhes' */}
 
       {/* Header */}
       <header className="border-b border-border bg-card shadow-lg flex-shrink-0 px-3 sm:px-6 py-2 sm:py-3">
@@ -466,7 +470,7 @@ export default function Home(  ) {
                 </div>
 
                 {/* Renderiza os alertas ativos */}
-                {data.alerts.map((alert, index) => (
+                {alerts.map((alert, index) => (
                   <div key={index} className="rounded-lg bg-red-500/10 border border-red-500/30 p-1.5 sm:p-2 flex-shrink-0 sm:col-span-2">
                     <p className="text-xs font-bold text-red-500 mb-1">🚨 {alert.type.toUpperCase().replace('_', ' ')}</p>
                     <p className="text-xs text-red-300">
