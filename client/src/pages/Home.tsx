@@ -279,14 +279,14 @@ export default function Home(  ) {
 
 
   return (
-    <div className="min-h-screen bg-background text-foreground dark flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-black text-foreground dark flex flex-col overflow-hidden">
       <Toaster position="top-right" />
 
       {/* Alerta flutuante removido a pedido do usuário. Os alertas agora são exibidos apenas na seção "Alertas e Detalhes" */}
       {/* O estado 'alerts' é usado para renderizar na seção 'Alertas e Detalhes' */}
 
       {/* Header */}
-      <header className="border-b border-border bg-card shadow-lg flex-shrink-0 px-3 sm:px-6 py-2 sm:py-3">
+      <header className="border-b border-border bg-[#0b0b0b] shadow-lg flex-shrink-0 px-3 sm:px-6 py-2 sm:py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <div className="rounded-lg bg-accent p-1 sm:p-1.5 flex-shrink-0">
@@ -335,12 +335,10 @@ export default function Home(  ) {
 
       {/* Main Content */}
       <main className="flex-grow p-4 sm:p-6">
-        {/* Alerta flutuante removido a pedido do usuário. Os alertas agora são exibidos apenas na seção "Alertas e Detalhes" */}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Coluna 1: Dados Atuais e Controles */}
           <div className="space-y-4">
-            <Card className="p-4 sm:p-6 space-y-4">
+            <Card className="p-4 sm:p-6 space-y-4" style={{borderRadius: '7px', backgroundColor: '#0b0b0b', border: '1.2px solid #202020'}}>
               <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
                 <Activity className="h-5 w-5 text-blue-500" />
                 Dados Atuais da Band
@@ -362,12 +360,12 @@ export default function Home(  ) {
                 </p>
               </div>
               <Button onClick={resetData} variant="outline" className="w-full">
-                Iniciar Expediente
+                Resetar Acumulação de Tempo
               </Button>
             </Card>
 
             {/* Logs */}
-            <Card className="p-4 sm:p-6 space-y-4">
+            <Card className="p-4 sm:p-6 space-y-4" style={{borderRadius: '7px', backgroundColor: '#0b0b0b', border: '1.2px solid #202020'}}>
               <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 cursor-pointer" onClick={() => setShowLogs(!showLogs)}>
                 <Zap className="h-5 w-5 text-yellow-500" />
                 Logs de Eventos ({logs.length})
@@ -385,7 +383,7 @@ export default function Home(  ) {
 
           {/* Coluna 2: Gráfico de Tempo Acumulado */}
           <div className="lg:col-span-2 space-y-4">
-            <Card className="p-4 sm:p-6 space-y-4">
+            <Card className="p-4 sm:p-6 space-y-4" style={{borderRadius: '7px', backgroundColor: '#0b0b0b', border: '1.2px solid #202020'}}>
               <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 Tempo Acumulado por Modo
@@ -405,17 +403,17 @@ export default function Home(  ) {
                 <div className="w-full md:w-1/2 space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-red-500 flex-shrink-0"></div>
-                    <p title="Band não detecta batimentos" className="text-sm font-medium">WorkOFF</p>
+                    <p className="text-sm font-medium">WorkOFF (Sem Batimentos)</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkOFF}s</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-green-500 flex-shrink-0"></div>
-                    <p title="Band detecta batimentos, mas está longe do workspace" className="text-sm font-medium">WorkON</p>
+                    <p className="text-sm font-medium">WorkON (Bat. + Longe)</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.WorkON}s</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-purple-500 flex-shrink-0"></div>
-                    <p title="Band detecta batimentos e está perto do workspace" className="text-sm font-medium">Working</p>
+                    <p className="text-sm font-medium">Working (Bat. + Perto)</p>
                     <p className="ml-auto text-sm font-bold">{modeCounts.Working}s</p>
                   </div>
                 </div>
@@ -423,7 +421,7 @@ export default function Home(  ) {
             </Card>
 
             {/* Alertas e Detalhes */}
-            <Card className="p-4 sm:p-6 space-y-4">
+            <Card className="p-4 sm:p-6 space-y-4" style={{borderRadius: '7px', backgroundColor: '#0b0b0b', border: '1.2px solid #202020'}}>
               <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 Alertas e Detalhes
