@@ -116,6 +116,8 @@ Para testar a funcionalidade completa da EloyBand, você precisará interagir co
 
 Abra o Dashboard da EloyBand no seu navegador. É aqui que você verá os dados em tempo real e os alertas.
 
+<img src="./img/dashboad.png">
+
 *   **Dashboard Publicado:** [https://eloydashboard.vercel.app/](https://eloydashboard.vercel.app/)
 
 > **⚠️ Aviso Importante:** O Backend (API Python) está hospedado em um serviço gratuito (Render), que pode entrar em modo de hibernação após um período de inatividade. Se o Dashboard não exibir dados imediatamente, **aguarde cerca de 30 a 60 segundos** para que o Backend acorde e se reconecte ao Broker MQTT.
@@ -123,6 +125,8 @@ Abra o Dashboard da EloyBand no seu navegador. É aqui que você verá os dados 
 ### 2. Iniciar a Simulação IoT (Wokwi)
 
 A simulação do ESP32 enviará os dados de batimentos e distância para o Backend, que por sua vez, alimenta o Dashboard.
+
+<img src="./img/projetowokwi.png">
 
 1.  Acesse o link da simulação do ESP32: [https://wokwi.com/projects/447627550400062465](https://wokwi.com/projects/447627550400062465).
 2.  Clique no botão **"Start Simulation"** (botão verde) no Wokwi.
