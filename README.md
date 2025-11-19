@@ -66,8 +66,6 @@ O projeto está organizado em um repositório com três branches principais, cad
 
 O projeto é dividido em três componentes principais, comunicando-se através do protocolo **MQTT** e uma **API REST**.
 
-O projeto é dividido em três componentes principais, comunicando-se através do protocolo **MQTT** e uma **API REST**.
-
 ```mermaid
 graph TD
     A[Dispositivo IoT - ESP32/Wokwi] -->|MQTT Publish: Batimentos b, Distância d| B(Broker MQTT - 44.223.43.74:1883)
