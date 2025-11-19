@@ -56,6 +56,16 @@ O *backend* rastreia o tempo acumulado em cada modo e gera dois alertas cruciais
 
 ## 🛠️ Arquitetura Técnica
 
+O projeto está organizado em um repositório com três branches principais, cada uma contendo o código-fonte de um componente:
+
+| Branch | Componente | Descrição |
+| :--- | :--- | :--- |
+| `main` | Dashboard (Frontend) | Contém o código React do Dashboard. |
+| `iot` | Dispositivo IoT (ESP32) | Contém o código Arduino (`sketch.ino`) para o ESP32. |
+| `python` | Backend (API/Processamento) | Contém o código Python (FastAPI/MQTT Processor) do Backend. |
+
+O projeto é dividido em três componentes principais, comunicando-se através do protocolo **MQTT** e uma **API REST**.
+
 O projeto é dividido em três componentes principais, comunicando-se através do protocolo **MQTT** e uma **API REST**.
 
 ```mermaid
@@ -65,7 +75,7 @@ graph TD
     C -->|API REST GET/POST| D[Dashboard - React/Frontend]
 ```
 
-### 1. Dispositivo IoT (eloyBand)
+### 1. Dispositivo IoT (eloyBand) - Branch `iot`
 
 *   **Tecnologia:** ESP32 (simulado no Wokwi).
 *   **Comunicação:** MQTT.
@@ -75,7 +85,7 @@ graph TD
     *   `TEF/device023/attrs/d`: Distância do Workspace em metros (valor numérico)
 *   **Link da Simulação Wokwi:** [https://wokwi.com/projects/447627550400062465](https://wokwi.com/projects/447627550400062465)
 
-### 2. Backend (Processamento e API)
+### 2. Backend (Processamento e API) - Branch `python`
 
 *   **Tecnologia:** Python com FastAPI e Paho-MQTT.
 *   **Função:** Receber dados via MQTT, processar a lógica de estados (WorkOFF, WorkON, Working), acumular tempo, gerar alertas e expor os resultados via API REST.
@@ -92,7 +102,7 @@ graph TD
 | `GET` | `/api/band/alerts` | Retorna apenas os alertas ativos. |
 | `POST` | `/api/band/reset` | Reseta os contadores de tempo e o histórico de alertas. |
 
-### 3. Dashboard (Frontend)
+### 3. Dashboard (Frontend) - Branch `main`
 
 *   **Tecnologia:** React (com Vite).
 *   **Função:** Consumir a API REST do Backend para exibir o estado atual, estatísticas de produtividade e alertas de forma visual e intuitiva.
