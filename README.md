@@ -60,7 +60,7 @@ O projeto é dividido em três componentes principais, comunicando-se através d
 
 ```mermaid
 graph TD
-    A[Dispositivo IoT - ESP32/Wokwi] -->|MQTT Publish: Batimentos (b), Distância (d)| B(Broker MQTT - 44.223.43.74:1883)
+    A[Dispositivo IoT - ESP32/Wokwi] -->|MQTT Publish: Batimentos b, Distância d| B(Broker MQTT - 44.223.43.74:1883)
     B -->|MQTT Subscribe| C[Backend Python - FastAPI/Processor]
     C -->|API REST GET/POST| D[Dashboard - React/Frontend]
 ```
