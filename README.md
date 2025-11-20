@@ -142,7 +142,7 @@ No Wokwi, você pode simular os diferentes modos de trabalho:
 | **Working** | Mova o **Potenciômetro** para um valor **> 0** E mova o **Ultrassônico** (Distância) para um valor **< 50cm**. | O modo deve mudar para **Working**. |
 | **WorkON** | Mova o **Potenciômetro** para um valor **> 0** E mova o **Ultrassônico** (Distância) para um valor **> 50cm**. | O modo deve mudar para **WorkON**. |
 
-**Observação:** O Backend (que processa os dados e gera os alertas) está rodando em um servidor externo e se conecta automaticamente ao broker MQTT, garantindo que o Dashboard receba os dados processados.
+**Observação:** O Backend (que processa os dados e gera os alertas) está rodando em um servidor externo e se conecta automaticamente ao broker MQTT, garantindo que o Dashboard receba os dados processados. um video demonstrativo pode ser acessado em : https://youtu.be/bENh7ULxUmU?si=wzSpGuQTprJiuATy
 
 ---
 
